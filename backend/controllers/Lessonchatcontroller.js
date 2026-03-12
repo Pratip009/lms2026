@@ -1,5 +1,5 @@
 const asyncHandler  = require('express-async-handler');
-const LessonMessage = require('../models/LessonMessage');
+const LessonMessage = require('../models/Lessonmessage.js');
 
 /* ── Cloudinary: lazy-init so missing .env vars don't
       crash the server on boot                          ── */
