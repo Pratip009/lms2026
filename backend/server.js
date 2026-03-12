@@ -50,7 +50,7 @@ app.use("/api/webhooks", webhookRoutes);
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: process.env.CLIENT_URL || "https://lms2026-three.vercel.app/",
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -114,7 +114,7 @@ app.use("/api/enrollments", enrollmentRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/admin", adminRoutes);
-app.use('/api/courses/:courseId/lessons/:lessonId/chat', lessonChatRoutes);
+app.use("/api/courses/:courseId/lessons/:lessonId/chat", lessonChatRoutes);
 
 // ─── 404 & Error handlers ─────────────────────────────────
 app.use(notFound);
