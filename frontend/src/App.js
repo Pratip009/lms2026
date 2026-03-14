@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMe } from "./redux/slices/authSlice";
@@ -7,6 +7,7 @@ import Navbar from "./components/layout/Navbar";
 import AdminLayout from "./components/layout/AdminLayout";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import useAttendance from "./hooks/useAttendance";
+import CinematicLoader from "./components/common/Cinematicloader";
 
 // Public pages
 import Home from "./pages/Home";
@@ -23,7 +24,7 @@ import MyCourses from "./pages/student/MyCourses";
 import VideoPlayer from "./pages/student/VideoPlayer";
 import ExamPage from "./pages/student/ExamPage";
 import AttendancePage from "./pages/student/AttendancePage";
-import Profile from "./pages/student/Profile"; // ✅ new
+import Profile from "./pages/student/Profile";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -35,8 +36,9 @@ import AdminStudents from "./pages/admin/Students";
 import AdminStudentDetail from "./pages/admin/StudentDetail";
 import AdminOrders from "./pages/admin/Orders";
 import AdminAttendance from "./pages/admin/Attendance";
+import FloatingUI from "./components/common/Floatingui";
 
-// ✅ Separate component so useAttendance runs AFTER fetchMe populates user
+// Separate component so useAttendance runs AFTER fetchMe populates user
 function AttendanceTracker() {
   useAttendance();
   return null;
@@ -45,71 +47,88 @@ function AttendanceTracker() {
 function App() {
   const dispatch = useDispatch();
   const { token } = useSelector((s) => s.auth);
+  const [showLoader, setShowLoader] = useState(true);
 
   useEffect(() => {
     if (token) dispatch(fetchMe());
   }, [dispatch, token]);
 
+  // Show loader only on first visit per session
+  useEffect(() => {
+    const seen = sessionStorage.getItem("bhi-loaded");
+    if (seen) setShowLoader(false);
+  }, []);
+
+  const handleLoaderDone = () => {
+    sessionStorage.setItem("bhi-loaded", "1");
+    setShowLoader(false);
+  };
+
   return (
-    <BrowserRouter>
-      <Navbar />
-      <AttendanceTracker /> {/* ✅ inside BrowserRouter, after auth is resolved */}
-      <Routes>
-        {/* Public */}
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/courses" element={<CourseList />} />
-        <Route path="/courses/:id" element={<CourseDetail />} />
-        <Route path="/payment/success" element={<PaymentSuccess />} />
-        <Route path="/verify-otp" element={<Verifyotp />} />
-        {/* Student */}
-        <Route element={<ProtectedRoute role="student" />}>
-          <Route path="/dashboard" element={<StudentDashboard />} />
-          <Route path="/my-courses" element={<MyCourses />} />
-          <Route
-            path="/learn/:courseId/lesson/:lessonId"
-            element={<VideoPlayer />}
-          />
-          <Route
-            path="/learn/:courseId/lesson/:lessonId/exam"
-            element={<ExamPage />}
-          />
-          <Route path="/attendance" element={<AttendancePage />} />
-          <Route path="/profile" element={<Profile />} /> {/* ✅ new */}
-        </Route>
+    <>
+      {showLoader && <CinematicLoader onDone={handleLoaderDone} />}
+      <FloatingUI />
+      <BrowserRouter>
+        <Navbar />
+        <AttendanceTracker />
+        <Routes>
+          {/* Public */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/courses" element={<CourseList />} />
+          <Route path="/courses/:id" element={<CourseDetail />} />
+          <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/verify-otp" element={<Verifyotp />} />
 
-        {/* Admin routes — wrapped in sidebar layout */}
-        <Route element={<ProtectedRoute role="admin" />}>
-          <Route element={<AdminLayout />}>
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/courses" element={<AdminCourses />} />
-            <Route path="/admin/courses/new" element={<AdminCourseForm />} />
+          {/* Student */}
+          <Route element={<ProtectedRoute role="student" />}>
+            <Route path="/dashboard" element={<StudentDashboard />} />
+            <Route path="/my-courses" element={<MyCourses />} />
             <Route
-              path="/admin/courses/:id/edit"
-              element={<AdminCourseForm />}
+              path="/learn/:courseId/lesson/:lessonId"
+              element={<VideoPlayer />}
             />
             <Route
-              path="/admin/courses/:courseId/lessons"
-              element={<AdminLessons />}
+              path="/learn/:courseId/lesson/:lessonId/exam"
+              element={<ExamPage />}
             />
-            <Route
-              path="/admin/courses/:courseId/lessons/:lessonId/exam"
-              element={<AdminExamForm />}
-            />
-            <Route path="/admin/students" element={<AdminStudents />} />
-            <Route
-              path="/admin/students/:id"
-              element={<AdminStudentDetail />}
-            />
-            <Route path="/admin/orders" element={<AdminOrders />} />
-            <Route path="/admin/attendance" element={<AdminAttendance />} />
+            <Route path="/attendance" element={<AttendancePage />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
-        </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+          {/* Admin — wrapped in sidebar layout */}
+          <Route element={<ProtectedRoute role="admin" />}>
+            <Route element={<AdminLayout />}>
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/courses" element={<AdminCourses />} />
+              <Route path="/admin/courses/new" element={<AdminCourseForm />} />
+              <Route
+                path="/admin/courses/:id/edit"
+                element={<AdminCourseForm />}
+              />
+              <Route
+                path="/admin/courses/:courseId/lessons"
+                element={<AdminLessons />}
+              />
+              <Route
+                path="/admin/courses/:courseId/lessons/:lessonId/exam"
+                element={<AdminExamForm />}
+              />
+              <Route path="/admin/students" element={<AdminStudents />} />
+              <Route
+                path="/admin/students/:id"
+                element={<AdminStudentDetail />}
+              />
+              <Route path="/admin/orders" element={<AdminOrders />} />
+              <Route path="/admin/attendance" element={<AdminAttendance />} />
+            </Route>
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </>
   );
 }
 
