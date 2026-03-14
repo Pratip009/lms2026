@@ -11,12 +11,26 @@ const {
   updateProfile,
   changePassword,
   heartbeat,
+  verifyOtp,
+  resendOtp,
 } = require("../controllers/authController");
 const { protect } = require("../middlewares/auth");
 const { validate } = require("../middlewares/validate");
 const { uploadAvatar } = require("../config/cloudinary");
 
 // ─── Validation rules ─────────────────────────────────────
+// add these validation rules
+const verifyOtpValidation = [
+  body("email")
+    .trim()
+    .isEmail()
+    .normalizeEmail()
+    .withMessage("Provide a valid email"),
+  body("otp")
+    .trim()
+    .matches(/^\d{6}$/)
+    .withMessage("OTP must be exactly 6 digits"),
+];
 const registerValidation = [
   body("name")
     .trim()
@@ -35,7 +49,11 @@ const registerValidation = [
 ];
 
 const loginValidation = [
-  body("email").trim().isEmail().normalizeEmail().withMessage("Provide a valid email"),
+  body("email")
+    .trim()
+    .isEmail()
+    .normalizeEmail()
+    .withMessage("Provide a valid email"),
   body("password").notEmpty().withMessage("Password is required"),
 ];
 
@@ -52,13 +70,24 @@ const changePasswordValidation = [
 router.post("/register", registerValidation, validate, register);
 router.post("/login", loginValidation, validate, login);
 router.post("/refresh-token", refreshToken);
-
+router.post("/verify-otp", verifyOtpValidation, validate, verifyOtp);
+router.post(
+  "/resend-otp",
+  body("email").trim().isEmail().normalizeEmail(),
+  validate,
+  resendOtp,
+);
 // ─── Protected routes ─────────────────────────────────────
 router.use(protect);
 router.post("/logout", logout);
 router.get("/me", getMe);
 router.put("/me", uploadAvatar.single("avatar"), updateProfile);
-router.put("/change-password", changePasswordValidation, validate, changePassword);
+router.put(
+  "/change-password",
+  changePasswordValidation,
+  validate,
+  changePassword,
+);
 router.post("/heartbeat", heartbeat);
 
 module.exports = router;

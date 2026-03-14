@@ -31,7 +31,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const webhookRoutes = require("./routes/webhookRoutes");
 const lessonChatRoutes = require("./routes/Lessonchatroutes.js");
 const app = express();
-
+app.set("trust proxy", 1);
 // ─── Connect databases ────────────────────────────────────
 connectDB().catch((err) => {
   console.error("❌ MongoDB connection failed:", err.message);
@@ -50,8 +50,10 @@ app.use("/api/webhooks", webhookRoutes);
 app.use(helmet());
 app.use(
   cors({
-    origin: [process.env.CLIENT_URL || "https://lms2026-three.vercel.app",
-    "http://localhost:3000"],
+    origin: [
+      process.env.CLIENT_URL || "https://lms2026-three.vercel.app",
+      "http://localhost:3000",
+    ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],

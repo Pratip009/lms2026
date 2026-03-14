@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: [true, "Email is required"],
-      unique: true,      // ← this already creates an index automatically
+      unique: true, // ← this already creates an index automatically
       lowercase: true,
       trim: true,
       match: [/^\S+@\S+\.\S+$/, "Please provide a valid email"],
@@ -41,6 +41,14 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    otp: {
+      type: String,
+      select: false, // ← must be select: false
+    },
+    otpExpires: {
+      type: Date,
+      select: false,
+    },
     emailVerificationToken: String,
     emailVerificationExpires: Date,
     passwordResetToken: String,
@@ -55,7 +63,7 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 // ─── Indexes ──────────────────────────────────────────────

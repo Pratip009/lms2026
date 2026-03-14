@@ -53,7 +53,6 @@ const css = `
     -webkit-font-smoothing: antialiased;
   }
 
-  /* ══ LEFT DARK HERO ══ */
   .reg-left {
     background: var(--hero);
     display: flex; flex-direction: column;
@@ -159,7 +158,6 @@ const css = `
     stroke: var(--b400); stroke-width: 2.5; fill: none;
   }
 
-  /* ══ RIGHT FORM ══ */
   .reg-right {
     background: var(--white);
     display: flex; align-items: center; justify-content: center;
@@ -185,7 +183,6 @@ const css = `
     font-size: 13px; color: var(--ink-4); font-weight: 300;
   }
 
-  /* Fields */
   .reg-fields { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
   .reg-field { display: flex; flex-direction: column; gap: 6px; }
   .reg-label {
@@ -216,7 +213,6 @@ const css = `
     box-shadow: 0 0 0 3px rgba(22,163,74,0.10);
   }
 
-  /* Password toggle */
   .reg-pw-toggle {
     position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
     background: none; border: none; cursor: pointer;
@@ -225,7 +221,6 @@ const css = `
   }
   .reg-pw-toggle:hover { color: var(--b600); }
 
-  /* Password strength */
   .reg-strength { margin-top: 8px; }
   .reg-strength-bars { display: flex; gap: 4px; margin-bottom: 5px; }
   .reg-strength-bar {
@@ -242,7 +237,6 @@ const css = `
   .reg-strength-label.strong { color: var(--green); }
   .reg-hint { font-size: 12px; color: var(--ink-5); margin-top: 5px; }
 
-  /* Shimmer submit */
   .reg-submit {
     position: relative; overflow: hidden;
     width: 100%; padding: 13px 20px;
@@ -287,14 +281,12 @@ const css = `
     animation: spin .7s linear infinite; flex-shrink: 0;
   }
 
-  /* Terms */
   .reg-terms {
     font-size: 11.5px; color: var(--ink-5);
     text-align: center; line-height: 1.6;
   }
   .reg-terms a { color: var(--ink-4); text-decoration: underline; }
 
-  /* Trust bar */
   .reg-trust {
     display: flex; align-items: center; justify-content: center; gap: 18px;
     margin-top: 18px; padding-top: 18px;
@@ -366,19 +358,19 @@ const EyeClosed = () => (
 export default function Register() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error, user } = useSelector(s => s.auth);
+  const { loading, error } = useSelector(s => s.auth);  // ← removed 'user' — not set after register anymore
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
 
-  useEffect(() => {
-    if (user) navigate('/dashboard');
-  }, [user, navigate]);
-
   useEffect(() => { return () => dispatch(clearError()); }, [dispatch]);
 
-  const handleSubmit = e => {
+  // ── Submit: on success go to OTP page, pass email via router state ──
+  const handleSubmit = async e => {
     e.preventDefault();
-    dispatch(register(form));
+    const result = await dispatch(register(form));
+    if (result.meta.requestStatus === 'fulfilled') {
+      navigate('/verify-otp', { state: { email: form.email } });
+    }
   };
 
   const strength = getStrength(form.password);

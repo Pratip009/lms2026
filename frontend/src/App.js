@@ -15,6 +15,7 @@ import Register from "./pages/Register";
 import CourseList from "./pages/CourseList";
 import CourseDetail from "./pages/CourseDetail";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import Verifyotp from "./pages/Verifyotp";
 
 // Student pages
 import StudentDashboard from "./pages/student/Dashboard";
@@ -61,7 +62,7 @@ function App() {
         <Route path="/courses" element={<CourseList />} />
         <Route path="/courses/:id" element={<CourseDetail />} />
         <Route path="/payment/success" element={<PaymentSuccess />} />
-
+        <Route path="/verify-otp" element={<Verifyotp />} />
         {/* Student */}
         <Route element={<ProtectedRoute role="student" />}>
           <Route path="/dashboard" element={<StudentDashboard />} />

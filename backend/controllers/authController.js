@@ -7,10 +7,114 @@ const {
   verifyRefreshToken,
   blacklistToken,
 } = require("../utils/jwt");
-const { startAttendanceSession, endAttendanceSession, getActiveSessionId } = require("../utils/attendance");
+const {
+  startAttendanceSession,
+  endAttendanceSession,
+  getActiveSessionId,
+} = require("../utils/attendance");
 const { successResponse, createdResponse } = require("../utils/response");
 const logger = require("../config/logger");
+const { sendOtpEmail, sendWelcomeEmail } = require("../utils/emailService");
 
+// ─── @desc    Verify OTP and complete registration
+// ─── @route   POST /api/auth/verify-otp
+// ─── @access  Public
+const verifyOtp = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+  console.log("verifyOtp hit:", { email, otp });
+  console.log("otp type:", typeof otp);
+
+  // ✅ findOne FIRST, then log
+  const user = await User.findOne({ email }).select("+otp +otpExpires");
+
+  console.log("user found:", !!user);
+  console.log("user.otp:", user?.otp);
+  console.log("user.otpExpires:", user?.otpExpires);
+  console.log("otp match:", user?.otp === otp);
+  console.log("isEmailVerified:", user?.isEmailVerified);
+  console.log("expired:", user?.otpExpires < new Date());
+
+  if (!user) {
+    res.status(404);
+    throw new Error("No account found with this email.");
+  }
+
+  if (user.isEmailVerified) {
+    res.status(400);
+    throw new Error("Email is already verified.");
+  }
+
+  if (!user.otp || user.otp !== otp) {
+    res.status(400);
+    throw new Error("Invalid OTP.");
+  }
+
+  if (user.otpExpires < new Date()) {
+    res.status(400);
+    throw new Error("OTP has expired. Please request a new one.");
+  }
+
+  // Mark verified, clear OTP fields
+  user.isEmailVerified = true;
+  user.otp = undefined;
+  user.otpExpires = undefined;
+  user.lastLogin = new Date();
+
+  // Issue tokens now (same as your original register flow)
+  const accessToken = generateAccessToken(user._id, user.role);
+  const refreshToken = generateRefreshToken(user._id);
+  user.refreshToken = refreshToken;
+  await user.save({ validateBeforeSave: false });
+
+  const sessionId = uuidv4();
+  await startAttendanceSession(
+    user._id,
+    sessionId,
+    req.ip,
+    req.headers["user-agent"],
+  );
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+  });
+
+  return successResponse(
+    res,
+    { user: user.toSafeObject(), accessToken, sessionId },
+    "Email verified. Welcome!",
+  );
+});
+
+// ─── @desc    Resend OTP
+// ─── @route   POST /api/auth/resend-otp
+// ─── @access  Public
+const resendOtp = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email }).select("+otp +otpExpires");
+  if (!user) {
+    res.status(404);
+    throw new Error("No account found with this email.");
+  }
+
+  if (user.isEmailVerified) {
+    res.status(400);
+    throw new Error("Email is already verified.");
+  }
+
+  // ✅ REPLACE WITH THIS — works on all Node versions
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  user.otp = otp;
+  user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+  await user.save({ validateBeforeSave: false });
+
+  await sendOtpEmail(email, otp);
+
+  return successResponse(res, {}, "A new OTP has been sent to your email.");
+});
 // ─── @desc    Register new student
 // ─── @route   POST /api/auth/register
 // ─── @access  Public
@@ -23,40 +127,27 @@ const register = asyncHandler(async (req, res) => {
     throw new Error("An account with this email already exists.");
   }
 
-  const user = await User.create({ name, email, password, role: "student" });
+  // Generate 6-digit OTP
+  // ✅ REPLACE WITH THIS — works on all Node versions
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
-  const accessToken = generateAccessToken(user._id, user.role);
-  const refreshToken = generateRefreshToken(user._id);
-
-  // Persist refresh token
-  user.refreshToken = refreshToken;
-  user.lastLogin = new Date();
-  await user.save({ validateBeforeSave: false });
-
-  // Start attendance session
-  const sessionId = uuidv4();
-  await startAttendanceSession(
-    user._id,
-    sessionId,
-    req.ip,
-    req.headers["user-agent"]
-  );
-
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-    maxAge: 30 * 24 * 60 * 60 * 1000,
+  const user = await User.create({
+    name,
+    email,
+    password,
+    role: "student",
+    otp,
+    otpExpires,
+    isEmailVerified: false,
   });
+
+  await sendOtpEmail(email, otp);
 
   return createdResponse(
     res,
-    {
-      user: user.toSafeObject(),
-      accessToken,
-      sessionId,
-    },
-    "Registration successful"
+    { email: user.email },
+    "Registration successful. Check your email for the OTP.",
   );
 });
 
@@ -74,9 +165,14 @@ const login = asyncHandler(async (req, res) => {
 
   if (!user.isActive) {
     res.status(403);
-    throw new Error("Your account has been deactivated. Please contact support.");
+    throw new Error(
+      "Your account has been deactivated. Please contact support.",
+    );
   }
-
+  if (!user.isEmailVerified) {
+    res.status(403);
+    throw new Error("Please verify your email before logging in.");
+  }
   const accessToken = generateAccessToken(user._id, user.role);
   const refreshToken = generateRefreshToken(user._id);
 
@@ -92,7 +188,12 @@ const login = asyncHandler(async (req, res) => {
 
   // Start new attendance session
   const sessionId = uuidv4();
-  await startAttendanceSession(user._id, sessionId, req.ip, req.headers["user-agent"]);
+  await startAttendanceSession(
+    user._id,
+    sessionId,
+    req.ip,
+    req.headers["user-agent"],
+  );
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
@@ -110,7 +211,7 @@ const login = asyncHandler(async (req, res) => {
       accessToken,
       sessionId,
     },
-    "Login successful"
+    "Login successful",
   );
 });
 
@@ -174,14 +275,20 @@ const refreshToken = asyncHandler(async (req, res) => {
     maxAge: 30 * 24 * 60 * 60 * 1000,
   });
 
-  return successResponse(res, { accessToken: newAccessToken }, "Token refreshed");
+  return successResponse(
+    res,
+    { accessToken: newAccessToken },
+    "Token refreshed",
+  );
 });
 
 // ─── @desc    Get authenticated user profile
 // ─── @route   GET /api/auth/me
 // ─── @access  Private
 const getMe = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id).populate("enrolledCoursesCount");
+  const user = await User.findById(req.user._id).populate(
+    "enrolledCoursesCount",
+  );
   return successResponse(res, { user: user.toSafeObject() });
 });
 
@@ -243,7 +350,22 @@ const heartbeat = asyncHandler(async (req, res) => {
   }
 
   const ok = await heartbeatSession(req.user._id, sessionId);
-  return successResponse(res, { active: ok }, ok ? "Heartbeat recorded" : "Session not found");
+  return successResponse(
+    res,
+    { active: ok },
+    ok ? "Heartbeat recorded" : "Session not found",
+  );
 });
 
-module.exports = { register, login, logout, refreshToken, getMe, updateProfile, changePassword, heartbeat };
+module.exports = {
+  register,
+  login,
+  logout,
+  refreshToken,
+  getMe,
+  updateProfile,
+  changePassword,
+  heartbeat,
+  verifyOtp,
+  resendOtp,
+};
