@@ -16,6 +16,19 @@ const { successResponse, createdResponse } = require("../utils/response");
 const logger = require("../config/logger");
 const { sendOtpEmail, sendWelcomeEmail } = require("../utils/emailService");
 
+// ─── Cookie helper ────────────────────────────────────────
+// FIX: sameSite "strict" silently drops cookies on cross-domain requests
+// (Vercel frontend → Render backend). Must use "none" in production,
+// which requires secure:true (Render provides HTTPS automatically).
+const setRefreshTokenCookie = (res, token) => {
+  res.cookie("refreshToken", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  });
+};
+
 // ─── @desc    Verify OTP and complete registration
 // ─── @route   POST /api/auth/verify-otp
 // ─── @access  Public
@@ -24,7 +37,6 @@ const verifyOtp = asyncHandler(async (req, res) => {
   console.log("verifyOtp hit:", { email, otp });
   console.log("otp type:", typeof otp);
 
-  // ✅ findOne FIRST, then log
   const user = await User.findOne({ email }).select("+otp +otpExpires");
 
   console.log("user found:", !!user);
@@ -60,7 +72,6 @@ const verifyOtp = asyncHandler(async (req, res) => {
   user.otpExpires = undefined;
   user.lastLogin = new Date();
 
-  // Issue tokens now (same as your original register flow)
   const accessToken = generateAccessToken(user._id, user.role);
   const refreshToken = generateRefreshToken(user._id);
   user.refreshToken = refreshToken;
@@ -74,12 +85,8 @@ const verifyOtp = asyncHandler(async (req, res) => {
     req.headers["user-agent"],
   );
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-  });
+  // FIX: use helper with sameSite "none" for cross-domain (Vercel ↔ Render)
+  setRefreshTokenCookie(res, refreshToken);
 
   return successResponse(
     res,
@@ -105,7 +112,6 @@ const resendOtp = asyncHandler(async (req, res) => {
     throw new Error("Email is already verified.");
   }
 
-  // ✅ REPLACE WITH THIS — works on all Node versions
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   user.otp = otp;
   user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
@@ -115,6 +121,7 @@ const resendOtp = asyncHandler(async (req, res) => {
 
   return successResponse(res, {}, "A new OTP has been sent to your email.");
 });
+
 // ─── @desc    Register new student
 // ─── @route   POST /api/auth/register
 // ─── @access  Public
@@ -127,8 +134,6 @@ const register = asyncHandler(async (req, res) => {
     throw new Error("An account with this email already exists.");
   }
 
-  // Generate 6-digit OTP
-  // ✅ REPLACE WITH THIS — works on all Node versions
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
@@ -169,10 +174,12 @@ const login = asyncHandler(async (req, res) => {
       "Your account has been deactivated. Please contact support.",
     );
   }
+
   if (!user.isEmailVerified) {
     res.status(403);
     throw new Error("Please verify your email before logging in.");
   }
+
   const accessToken = generateAccessToken(user._id, user.role);
   const refreshToken = generateRefreshToken(user._id);
 
@@ -180,13 +187,11 @@ const login = asyncHandler(async (req, res) => {
   user.lastLogin = new Date();
   await user.save({ validateBeforeSave: false });
 
-  // End any dangling previous session
   const existingSessionId = await getActiveSessionId(user._id);
   if (existingSessionId) {
     await endAttendanceSession(user._id, existingSessionId);
   }
 
-  // Start new attendance session
   const sessionId = uuidv4();
   await startAttendanceSession(
     user._id,
@@ -195,12 +200,8 @@ const login = asyncHandler(async (req, res) => {
     req.headers["user-agent"],
   );
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-  });
+  // FIX: use helper with sameSite "none" for cross-domain (Vercel ↔ Render)
+  setRefreshTokenCookie(res, refreshToken);
 
   logger.info(`User logged in: ${user.email} (${user.role})`);
 
@@ -221,18 +222,19 @@ const login = asyncHandler(async (req, res) => {
 const logout = asyncHandler(async (req, res) => {
   const { sessionId } = req.body;
 
-  // End attendance session
   if (sessionId) {
     await endAttendanceSession(req.user._id, sessionId);
   }
 
-  // Blacklist current access token
   await blacklistToken(req.token);
 
-  // Clear refresh token in DB
   await User.findByIdAndUpdate(req.user._id, { $unset: { refreshToken: 1 } });
 
-  res.clearCookie("refreshToken");
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  });
 
   return successResponse(res, {}, "Logged out successfully");
 });
@@ -268,12 +270,8 @@ const refreshToken = asyncHandler(async (req, res) => {
   user.refreshToken = newRefreshToken;
   await user.save({ validateBeforeSave: false });
 
-  res.cookie("refreshToken", newRefreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-  });
+  // FIX: use helper with sameSite "none" for cross-domain (Vercel ↔ Render)
+  setRefreshTokenCookie(res, newRefreshToken);
 
   return successResponse(
     res,
@@ -300,7 +298,6 @@ const updateProfile = asyncHandler(async (req, res) => {
   const updates = {};
   if (name) updates.name = name;
 
-  // If avatar was uploaded via multer+cloudinary
   if (req.file) {
     updates.avatar = {
       url: req.file.path,
@@ -331,7 +328,6 @@ const changePassword = asyncHandler(async (req, res) => {
   user.password = newPassword;
   await user.save();
 
-  // Blacklist current token — force re-login
   await blacklistToken(req.token);
 
   return successResponse(res, {}, "Password changed. Please log in again.");

@@ -57,6 +57,7 @@ const sendCourseCompletionEmail = (email, { name, courseName }) =>
   });
 
 module.exports = {
+  transporter, // ← exported so server.js can call transporter.verify()
   sendOtpEmail,
   sendWelcomeEmail,
   sendPaymentSuccessEmail,

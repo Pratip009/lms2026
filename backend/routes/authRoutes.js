@@ -19,18 +19,22 @@ const { validate } = require("../middlewares/validate");
 const { uploadAvatar } = require("../config/cloudinary");
 
 // ─── Validation rules ─────────────────────────────────────
-// add these validation rules
+// FIX: removed .normalizeEmail() from all routes — it mangles emails
+// (e.g. strips dots, removes tags) causing User.findOne({ email }) to
+// return null on verify-otp even though the user exists in the DB.
+// Your User schema already has lowercase:true which handles normalization.
+
 const verifyOtpValidation = [
   body("email")
     .trim()
     .isEmail()
-    .normalizeEmail()
     .withMessage("Provide a valid email"),
   body("otp")
     .trim()
     .matches(/^\d{6}$/)
     .withMessage("OTP must be exactly 6 digits"),
 ];
+
 const registerValidation = [
   body("name")
     .trim()
@@ -39,7 +43,6 @@ const registerValidation = [
   body("email")
     .trim()
     .isEmail()
-    .normalizeEmail()
     .withMessage("Provide a valid email"),
   body("password")
     .isLength({ min: 8 })
@@ -52,7 +55,6 @@ const loginValidation = [
   body("email")
     .trim()
     .isEmail()
-    .normalizeEmail()
     .withMessage("Provide a valid email"),
   body("password").notEmpty().withMessage("Password is required"),
 ];
@@ -73,10 +75,11 @@ router.post("/refresh-token", refreshToken);
 router.post("/verify-otp", verifyOtpValidation, validate, verifyOtp);
 router.post(
   "/resend-otp",
-  body("email").trim().isEmail().normalizeEmail(),
+  body("email").trim().isEmail().withMessage("Provide a valid email"), // FIX: removed normalizeEmail()
   validate,
   resendOtp,
 );
+
 // ─── Protected routes ─────────────────────────────────────
 router.use(protect);
 router.post("/logout", logout);

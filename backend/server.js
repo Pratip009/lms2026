@@ -30,17 +30,34 @@ const progressRoutes = require("./routes/progressRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const webhookRoutes = require("./routes/webhookRoutes");
 const lessonChatRoutes = require("./routes/Lessonchatroutes.js");
+
 const app = express();
 app.set("trust proxy", 1);
+
 // ─── Connect databases ────────────────────────────────────
 connectDB().catch((err) => {
   console.error("❌ MongoDB connection failed:", err.message);
-  process.exit(1); // DB is critical — exit if it fails
+  process.exit(1);
 });
 
 // Redis is non-critical — log warning but keep server running
 connectRedis().catch((err) => {
   console.warn("⚠️  Redis connection failed (caching disabled):", err.message);
+});
+
+// ─── Verify Nodemailer on startup ─────────────────────────
+// This logs to Render so you can confirm email auth is working.
+// Check Render → Logs after deploy — you should see ✅ or ❌ with reason.
+const { transporter } = require("./utils/emailService");
+transporter.verify((error) => {
+  if (error) {
+    console.error("❌ Nodemailer auth failed:", error.message);
+    console.error("   → Check EMAIL_USER and EMAIL_PASS in Render env vars.");
+    console.error("   → EMAIL_PASS must be a Gmail App Password, not your real password.");
+    console.error("   → Generate one at: https://myaccount.google.com/apppasswords");
+  } else {
+    console.log("✅ Nodemailer is ready to send emails");
+  }
 });
 
 // ─── Stripe webhook (raw body required — MUST come before json()) ─
