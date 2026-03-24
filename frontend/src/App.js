@@ -67,13 +67,21 @@ function App() {
   return (
     <>
       {showLoader && <CinematicLoader onDone={handleLoaderDone} />}
-      <FloatingUI />
+
       <BrowserRouter>
         <Navbar />
         <AttendanceTracker />
         <Routes>
           {/* Public */}
-          <Route path="/" element={<Home />} />
+          <Route
+            path="/"
+            element={
+              <>
+                <FloatingUI />
+                <Home />
+              </>
+            }
+          />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/courses" element={<CourseList />} />

@@ -22,100 +22,145 @@ const styles = `
     --rose:#e11d48; --rose-lt:#fff1f2; --rose-mid:#fecdd3;
     --font-display:'Syne',sans-serif; --font-body:'DM Sans',sans-serif;
     --r:10px; --r-lg:16px; --r-xl:22px;
-    --sidebar-w: 280px;
+    --sidebar-w: 272px;
+    --topbar-h: 60px;
   }
 
   *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 
-  @keyframes fadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
-  @keyframes shimmer { 0%{left:-100%} 60%{left:150%} 100%{left:150%} }
-  @keyframes spin    { to{transform:rotate(360deg)} }
-  @keyframes slideIn { from{transform:translateX(-100%)} to{transform:translateX(0)} }
+  @keyframes fadeUp    { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeIn    { from{opacity:0} to{opacity:1} }
+  @keyframes shimmer   { 0%{left:-100%} 60%{left:150%} 100%{left:150%} }
+  @keyframes spin      { to{transform:rotate(360deg)} }
+  @keyframes slideLeft { from{transform:translateX(-100%)} to{transform:translateX(0)} }
   @keyframes overlayIn { from{opacity:0} to{opacity:1} }
+  @keyframes pulse     { 0%,100%{opacity:1} 50%{opacity:.5} }
 
+  /* ══ ROOT SHELL ══ */
   .vp-root {
     font-family: var(--font-body);
     background: var(--surface);
     color: var(--ink);
     display: flex;
-    min-height: calc(100vh - 60px);
+    flex-direction: column;
+    min-height: calc(100vh - var(--topbar-h));
     -webkit-font-smoothing: antialiased;
     position: relative;
+    overflow: hidden;
   }
 
+  /* Subtle dot grid */
   .vp-root::before {
     content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
-    background-image:radial-gradient(circle,rgba(37,99,235,0.04) 1px,transparent 1px);
+    background-image:radial-gradient(circle,rgba(37,99,235,0.035) 1px,transparent 1px);
     background-size:28px 28px;
   }
 
-  /* ══ MOBILE TOPBAR ══ */
-  .vp-mobile-bar {
-    display: none;
+  /* ══ TOP STRIP ══ */
+  .vp-topstrip {
+    background: linear-gradient(135deg, #050f2b 0%, #0d1f4a 55%, #112255 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    display: flex; align-items: center;
+    padding: 0 20px; height: 52px; flex-shrink: 0;
     position: sticky; top: 0; z-index: 100;
-    background: var(--hero);
-    padding: 0 16px;
-    height: 52px;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    gap: 0;
   }
-  .vp-mobile-bar-left {
-    display: flex; align-items: center; gap: 10px;
+  .vp-topstrip::before {
+    content:''; position:absolute; inset:0;
+    background-image:radial-gradient(circle,rgba(59,130,246,0.15) 1px,transparent 1px);
+    background-size:22px 22px; pointer-events:none;
+    mask-image:linear-gradient(180deg,rgba(0,0,0,.5) 0%,transparent 100%);
+    -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.5) 0%,transparent 100%);
   }
-  .vp-hamburger {
-    width: 36px; height: 36px; border-radius: 9px;
+
+  .vp-toggle-sidebar-btn {
+    width: 34px; height: 34px; border-radius: 9px;
     background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 4px; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0; color: rgba(255,255,255,0.7);
+    transition: all .18s; position: relative; z-index: 1; margin-right: 12px;
   }
-  .vp-hamburger span {
-    display: block; width: 16px; height: 1.5px;
-    background: rgba(255,255,255,0.8); border-radius: 2px;
-    transition: all .2s;
-  }
-  .vp-hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(4px, 4px); }
-  .vp-hamburger.open span:nth-child(2) { opacity: 0; }
-  .vp-hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(4px, -4px); }
+  .vp-toggle-sidebar-btn:hover { background:rgba(255,255,255,0.15); color:#fff; }
+  .vp-toggle-sidebar-btn svg { width:16px; height:16px; fill:currentColor; }
 
-  .vp-mobile-title {
-    font-family: var(--font-display);
-    font-size: 13px; font-weight: 700;
-    color: rgba(255,255,255,0.9);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    max-width: 160px;
+  .vp-topstrip-back {
+    display: inline-flex; align-items: center; gap: 5px;
+    color: rgba(255,255,255,0.5); text-decoration: none;
+    font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    transition: color .15s; position: relative; font-family: var(--font-display);
+    margin-right: 14px; flex-shrink: 0;
   }
-  .vp-mobile-prog-pill {
-    font-size: 10px; font-weight: 700;
-    color: var(--b300); font-family: var(--font-display);
-    background: rgba(59,130,246,0.15);
-    border: 1px solid rgba(59,130,246,0.25);
-    padding: 3px 10px; border-radius: 100px;
-    white-space: nowrap;
+  .vp-topstrip-back:hover { color: rgba(255,255,255,0.9); }
+
+  .vp-topstrip-divider {
+    width: 1px; height: 22px; background: rgba(255,255,255,0.12);
+    margin-right: 14px; flex-shrink: 0;
   }
 
-  /* ══ SIDEBAR OVERLAY (mobile) ══ */
-  .vp-overlay {
-    display: none;
-    position: fixed; inset: 0; z-index: 200;
-    background: rgba(5,15,43,0.55);
-    backdrop-filter: blur(2px);
-    animation: overlayIn .2s ease;
+  .vp-topstrip-lesson-info { flex: 1; min-width: 0; position: relative; }
+  .vp-topstrip-num {
+    font-size: 9.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--b400); font-family: var(--font-display); margin-bottom: 1px;
   }
-  .vp-overlay.open { display: block; }
+  .vp-topstrip-title {
+    font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.92);
+    font-family: var(--font-display); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; max-width: 400px;
+  }
 
-  /* ══ SIDEBAR ══ */
+  .vp-topstrip-right {
+    display: flex; align-items: center; gap: 10px;
+    position: relative; flex-shrink: 0; margin-left: auto;
+  }
+
+  .vp-prog-pill {
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 100px; padding: 5px 12px; min-width: 130px;
+  }
+  .vp-prog-pill-track {
+    flex: 1; height: 3px; background: rgba(255,255,255,0.12);
+    border-radius: 100px; overflow: hidden;
+  }
+  .vp-prog-pill-fill {
+    height: 100%; background: linear-gradient(90deg, var(--b400), var(--b300));
+    border-radius: 100px; transition: width .5s ease;
+  }
+  .vp-prog-pill-label {
+    font-size: 10.5px; font-weight: 800; color: var(--b300);
+    font-family: var(--font-display); white-space: nowrap;
+  }
+
+  .vp-topstrip-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 100px;
+    font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    font-family: var(--font-display); flex-shrink: 0;
+  }
+  .vp-badge-watched { background: rgba(217,119,6,0.2); color: #fbbf24; border: 1px solid rgba(217,119,6,0.3); }
+  .vp-badge-passed  { background: rgba(22,163,74,0.2); color: #4ade80; border: 1px solid rgba(22,163,74,0.3); }
+
+  /* ══ BODY: sidebar + main ══ */
+  .vp-body {
+    flex: 1; display: flex; overflow: hidden; position: relative; z-index: 1;
+    height: calc(100vh - var(--topbar-h) - 52px);
+  }
+
+  /* ══ COLLAPSIBLE SIDEBAR ══ */
   .vp-sidebar {
-    width: var(--sidebar-w); min-width: var(--sidebar-w);
+    width: var(--sidebar-w); flex-shrink: 0;
     background: var(--white); border-right: 1px solid var(--border);
     display: flex; flex-direction: column; overflow: hidden;
-    position: relative; z-index: 1;
-    transition: transform .25s ease;
+    transition: width .28s cubic-bezier(.4,0,.2,1), min-width .28s cubic-bezier(.4,0,.2,1);
+    position: relative; z-index: 2;
+    min-width: var(--sidebar-w);
+  }
+  .vp-sidebar.collapsed {
+    width: 0; min-width: 0; border-right: none;
   }
 
   .vp-sidebar-top {
-    padding: 22px 20px 18px;
+    padding: 20px 18px 16px;
     border-bottom: 1px solid var(--border);
     background: linear-gradient(175deg,#050f2b 0%,#0d1f4a 60%,#112255 100%);
     position: relative; overflow: hidden; flex-shrink: 0;
@@ -129,330 +174,316 @@ const styles = `
   }
   .vp-sidebar-top::after {
     content:''; position:absolute; bottom:-20px; right:-20px;
-    width:140px; height:120px;
+    width:120px; height:100px;
     background:radial-gradient(ellipse,rgba(59,130,246,0.18) 0%,transparent 70%);
     pointer-events:none;
   }
 
-  .vp-sidebar-close {
-    display: none;
-    position: absolute; top: 12px; right: 12px;
-    width: 28px; height: 28px; border-radius: 7px;
-    background: rgba(255,255,255,0.1); border: none; cursor: pointer;
-    color: rgba(255,255,255,0.7); font-size: 16px;
-    align-items: center; justify-content: center;
-    z-index: 2; transition: background .15s;
+  .vp-sidebar-prog-label {
+    font-size: 9.5px; font-weight: 800; letter-spacing:.14em; text-transform: uppercase;
+    color: rgba(255,255,255,0.4); font-family: var(--font-display);
+    margin-bottom: 8px; display:flex; justify-content:space-between; position: relative;
   }
-  .vp-sidebar-close:hover { background: rgba(255,255,255,0.18); }
-
-  .vp-back-link {
-    display: inline-flex; align-items: center; gap: 6px;
-    color: rgba(255,255,255,0.55); text-decoration: none;
-    font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
-    transition: color .15s; position: relative; font-family: var(--font-display);
+  .vp-sidebar-prog-label em { font-style:normal; color: var(--b400); }
+  .vp-sidebar-prog-track { height:4px; background:rgba(255,255,255,0.12); border-radius:100px; overflow:hidden; position: relative; }
+  .vp-sidebar-prog-fill {
+    height:100%; background:linear-gradient(90deg,var(--b400),var(--b300));
+    border-radius:100px; transition:width .5s ease; position:relative;
   }
-  .vp-back-link:hover { color: rgba(255,255,255,0.9); }
-
-  .vp-prog-wrap { margin-top: 16px; position: relative; }
-  .vp-prog-label-row {
-    display: flex; justify-content: space-between;
-    font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
-    color: rgba(255,255,255,0.4); margin-bottom: 8px; font-family: var(--font-display);
-  }
-  .vp-prog-label-row em { font-style: normal; color: var(--b400); }
-  .vp-prog-track { height: 4px; background: rgba(255,255,255,0.12); border-radius: 100px; overflow: hidden; }
-  .vp-prog-fill {
-    height: 100%; background: linear-gradient(90deg,var(--b400),var(--b300));
-    border-radius: 100px; transition: width .5s ease; position: relative;
-  }
-  .vp-prog-fill::after {
+  .vp-sidebar-prog-fill::after {
     content:''; position:absolute; top:0; left:-100%; width:50%; height:100%;
     background:linear-gradient(90deg,transparent,rgba(255,255,255,0.5),transparent);
     animation:shimmer 2.4s ease-in-out infinite;
   }
 
+  .vp-sidebar-stats {
+    display: flex; gap: 8px; margin-top: 12px; position: relative;
+  }
+  .vp-sidebar-stat {
+    flex: 1; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 8px 10px; text-align: center;
+  }
+  .vp-sidebar-stat-val {
+    font-size: 18px; font-weight: 800; color: #fff;
+    font-family: var(--font-display); line-height: 1;
+  }
+  .vp-sidebar-stat-label {
+    font-size: 9px; color: rgba(255,255,255,0.38); margin-top: 3px;
+    text-transform: uppercase; letter-spacing: .08em; font-weight: 700;
+    font-family: var(--font-display);
+  }
+
   .vp-list-label {
-    padding: 13px 20px 5px;
-    font-size: 9.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+    padding: 11px 18px 4px;
+    font-size: 9px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase;
     color: var(--ink-4); font-family: var(--font-display); flex-shrink: 0;
   }
 
   .vp-lesson-list {
     overflow-y: auto; flex: 1;
     scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    padding: 4px 0 8px;
   }
-  .vp-lesson-list::-webkit-scrollbar { width: 4px; }
-  .vp-lesson-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .vp-lesson-list::-webkit-scrollbar { width: 3px; }
+  .vp-lesson-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
   .vp-lesson-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 11px 20px; border-bottom: 1px solid var(--surface);
-    cursor: pointer; transition: background .12s;
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 18px; cursor: pointer; transition: background .12s;
+    border-left: 3px solid transparent; position: relative;
   }
   .vp-lesson-item:hover:not(.locked) { background: var(--surface); }
   .vp-lesson-item.active {
-    background: var(--b50); border-left: 3px solid var(--b600); padding-left: 17px;
+    background: var(--b50); border-left-color: var(--b600);
   }
-  .vp-lesson-item.locked { cursor: not-allowed; opacity: .42; }
+  .vp-lesson-item.locked { cursor: not-allowed; opacity: .38; }
 
   .vp-lesson-num {
-    font-size: 10px; font-weight: 800; color: var(--ink-4);
-    min-width: 18px; text-align: center; font-family: var(--font-display);
+    font-size: 9.5px; font-weight: 800; color: var(--ink-5);
+    min-width: 16px; text-align: center; font-family: var(--font-display);
   }
-  .vp-lesson-item.active .vp-lesson-num { color: var(--b600); }
+  .vp-lesson-item.active .vp-lesson-num { color: var(--b500); }
 
   .vp-lesson-dot {
-    width: 26px; height: 26px; border-radius: 7px; background: var(--surface-2);
+    width: 24px; height: 24px; border-radius: 6px; background: var(--surface-2);
     display: flex; align-items: center; justify-content: center;
-    font-size: 11px; flex-shrink: 0; color: var(--ink-4); transition: all .15s;
+    font-size: 10px; flex-shrink: 0; color: var(--ink-4); transition: all .15s;
+    border: 1px solid transparent;
   }
-  .vp-lesson-item.active .vp-lesson-dot { background: var(--b100); color: var(--b600); }
-  .vp-lesson-dot.ok   { background: var(--green-lt); color: var(--green); }
-  .vp-lesson-dot.seen { background: var(--amber-lt); color: var(--amber); }
+  .vp-lesson-item.active .vp-lesson-dot { background: var(--b100); color: var(--b600); border-color: var(--b200); }
+  .vp-lesson-dot.ok   { background: var(--green-lt); color: var(--green); border-color: var(--green-mid); }
+  .vp-lesson-dot.seen { background: var(--amber-lt); color: var(--amber); border-color: var(--amber-mid); }
 
   .vp-lesson-info { flex: 1; min-width: 0; }
   .vp-lesson-name {
-    font-size: 13px; font-weight: 500; color: var(--ink-2);
+    font-size: 12.5px; font-weight: 500; color: var(--ink-2);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4;
-    font-family: var(--font-body);
   }
   .vp-lesson-item.active .vp-lesson-name { color: var(--b700); font-weight: 600; }
-  .vp-lesson-sub { font-size: 10px; color: var(--ink-4); margin-top: 2px; font-weight: 400; }
-  .vp-lesson-sub.ok   { color: var(--green); font-weight: 600; }
-  .vp-lesson-sub.seen { color: var(--amber); font-weight: 600; }
+  .vp-lesson-sub { font-size: 9.5px; color: var(--ink-4); margin-top: 2px; font-weight: 500; }
+  .vp-lesson-sub.ok   { color: var(--green); }
+  .vp-lesson-sub.seen { color: var(--amber); }
 
-  /* ══ MAIN ══ */
-  .vp-main { flex: 1; overflow-y: auto; position: relative; z-index: 1; min-width: 0; }
-  .vp-content { width: 100%; padding: 36px 40px 72px; max-width: 960px; }
+  /* ══ MAIN AREA ══ */
+  .vp-main {
+    flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden;
+  }
 
-  .vp-main-hero {
-    position: absolute; top: 0; left: 0; right: 0; height: 200px; z-index: 0; pointer-events: none;
-    background: linear-gradient(180deg,rgba(5,15,43,0.04) 0%,transparent 100%);
+  /* ══ CONTENT ROW: video + chat side by side ══ */
+  .vp-content-row {
+    flex: 1; display: flex; overflow: hidden; gap: 0;
+  }
+
+  /* ── Video Panel ── */
+  .vp-video-panel {
+    display: flex; flex-direction: column; overflow: hidden;
+    flex: 0 0 58%; min-width: 0;
+    border-right: 1px solid var(--border);
+    background: var(--white);
+  }
+
+  .vp-video-header {
+    padding: 14px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; flex-shrink: 0; flex-wrap: wrap;
   }
 
   .vp-crumb {
-    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-    font-size: 12px; color: var(--ink-4); margin-bottom: 18px;
-    animation: fadeUp .35s ease both;
+    display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+    font-size: 11px; color: var(--ink-4); margin-bottom: 5px;
   }
-  .vp-crumb a { color: var(--ink-4); text-decoration: none; }
+  .vp-crumb a { color: var(--ink-4); text-decoration: none; transition: color .14s; }
   .vp-crumb a:hover { color: var(--b600); }
   .vp-crumb-sep { opacity: .35; }
 
-  .vp-title-row {
-    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
-    margin-bottom: 24px; flex-wrap: wrap;
-    animation: fadeUp .4s ease both .05s;
-  }
   .vp-title {
     font-family: var(--font-display);
-    font-size: clamp(20px,3vw,32px); font-weight: 800;
-    color: var(--ink); margin: 0; line-height: 1.15; letter-spacing: -.04em;
+    font-size: clamp(15px, 2vw, 22px); font-weight: 800;
+    color: var(--ink); line-height: 1.2; letter-spacing: -.03em;
   }
-  .vp-badges { display: flex; gap: 8px; padding-top: 5px; flex-shrink: 0; flex-wrap: wrap; }
+
+  .vp-badges { display: flex; gap: 7px; padding-top: 2px; flex-shrink: 0; }
   .vp-badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 5px 12px; border-radius: 100px;
-    font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 100px;
+    font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
     font-family: var(--font-display);
   }
   .vp-badge-watched { background: var(--amber-lt); color: var(--amber); border: 1px solid var(--amber-mid); }
-  .vp-badge-passed  {
-    background: var(--green-lt); color: var(--green); border: 1px solid var(--green-mid);
-    box-shadow: 0 2px 8px rgba(22,163,74,0.12);
-  }
+  .vp-badge-passed  { background: var(--green-lt); color: var(--green); border: 1px solid var(--green-mid); }
 
-  .vp-alert {
-    display: flex; align-items: center; gap: 10px;
-    background: var(--rose-lt); border: 1px solid var(--rose-mid);
-    color: var(--rose); border-radius: var(--r);
-    padding: 12px 16px; font-size: 13px; margin-bottom: 22px;
-    animation: fadeIn .3s ease;
+  /* Video area - scrollable */
+  .vp-video-body {
+    flex: 1; overflow-y: auto; padding: 16px 20px 20px;
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
   }
+  .vp-video-body::-webkit-scrollbar { width: 4px; }
+  .vp-video-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-  /* ── Video ── */
   .vp-video-shell {
     position: relative; padding-bottom: 56.25%; height: 0;
-    margin-bottom: 24px; border-radius: var(--r-lg); overflow: hidden;
+    border-radius: var(--r-lg); overflow: hidden;
     background: #050f2b;
-    box-shadow: 0 4px 28px rgba(5,15,43,0.18), 0 0 0 1px rgba(15,23,42,0.08);
-    animation: fadeUp .45s ease both .1s;
+    box-shadow: 0 4px 28px rgba(5,15,43,0.16), 0 0 0 1px rgba(15,23,42,0.07);
+    animation: fadeUp .4s ease both;
   }
-  .vp-video-shell iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+  .vp-video-shell iframe { position:absolute; top:0; left:0; width:100%; height:100%; border:none; }
 
   .vp-video-placeholder {
     position: relative; padding-bottom: 56.25%; height: 0;
-    margin-bottom: 24px; border-radius: var(--r-lg); overflow: hidden;
-    background: var(--white); border: 1px solid var(--border);
-    box-shadow: 0 2px 12px rgba(15,23,42,0.06);
-    animation: fadeUp .45s ease both .1s;
+    border-radius: var(--r-lg); overflow: hidden;
+    background: var(--surface); border: 1px solid var(--border);
+    animation: fadeUp .4s ease both;
   }
   .vp-video-placeholder-in {
-    position: absolute; inset: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px;
   }
   .vp-ph-icon {
-    width: 56px; height: 56px; border-radius: 14px;
-    background: var(--surface-2); border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center; font-size: 22px;
-    box-shadow: 0 2px 8px rgba(15,23,42,0.06);
+    width:52px; height:52px; border-radius:13px;
+    background:var(--surface-2); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; font-size:20px;
+    box-shadow:0 2px 8px rgba(15,23,42,0.06);
   }
-  .vp-ph-text { font-size: 14px; color: var(--ink-4); }
+  .vp-ph-text { font-size:13px; color:var(--ink-4); }
   .vp-spinner {
-    width: 28px; height: 28px; border: 2.5px solid var(--border); border-top-color: var(--b500);
-    border-radius: 50%; animation: spin .75s linear infinite;
+    width:26px; height:26px; border:2.5px solid var(--border); border-top-color:var(--b500);
+    border-radius:50%; animation:spin .75s linear infinite;
   }
 
-  /* ── Actions ── */
+  /* Actions row */
   .vp-actions {
-    display: flex; gap: 10px; margin-bottom: 26px; flex-wrap: wrap;
-    animation: fadeUp .4s ease both .15s;
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px;
+    animation: fadeUp .4s ease both .1s;
   }
   .vp-btn {
     position: relative; overflow: hidden;
-    display: inline-flex; align-items: center; gap: 7px;
-    padding: 10px 18px; border-radius: var(--r);
-    font-family: var(--font-display); font-size: 12px; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border-radius: var(--r);
+    font-family: var(--font-display); font-size: 11px; font-weight: 700;
     cursor: pointer; border: none; transition: all .15s; white-space: nowrap;
-    letter-spacing: .04em; text-transform: uppercase;
+    letter-spacing: .05em; text-transform: uppercase;
   }
   .vp-btn-primary {
     background: linear-gradient(135deg,var(--b500),var(--b700)); color: #fff;
-    box-shadow: 0 3px 14px rgba(37,99,235,0.28), inset 0 1px 0 rgba(255,255,255,0.15);
+    box-shadow: 0 3px 12px rgba(37,99,235,0.28), inset 0 1px 0 rgba(255,255,255,0.15);
   }
   .vp-btn-primary::after {
     content:''; position:absolute; top:0; left:-100%; width:60%; height:100%;
     background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);
     animation:shimmer 2.8s ease-in-out infinite; pointer-events:none;
   }
-  .vp-btn-primary:hover { box-shadow:0 6px 22px rgba(37,99,235,0.36); transform:translateY(-1px); }
-
+  .vp-btn-primary:hover { box-shadow:0 6px 20px rgba(37,99,235,0.36); transform:translateY(-1px); }
   .vp-btn-outline {
     background: var(--white); color: var(--ink-2); border: 1px solid var(--border-2);
   }
-  .vp-btn-outline:hover { background: var(--surface); border-color: var(--ink-4); box-shadow: 0 2px 8px rgba(15,23,42,0.07); }
-
+  .vp-btn-outline:hover { background:var(--surface); border-color:var(--ink-4); }
   .vp-btn-success {
     background: var(--green-lt); color: var(--green); border: 1px solid var(--green-mid);
-    box-shadow: 0 2px 8px rgba(22,163,74,0.1);
   }
-  .vp-btn-success::after {
-    content:''; position:absolute; top:0; left:-100%; width:60%; height:100%;
-    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent);
-    animation:shimmer 2.8s ease-in-out infinite; pointer-events:none;
-  }
-  .vp-btn-success:hover { background:#e0f7f0; box-shadow:0 4px 14px rgba(22,163,74,0.15); }
-
+  .vp-btn-success:hover { background:#dcfce7; }
   .vp-btn-ghost {
     background: transparent; color: var(--ink-3); border: 1px solid var(--border);
   }
-  .vp-btn-ghost:hover { color: var(--ink-2); border-color: var(--border-2); background: var(--white); }
+  .vp-btn-ghost:hover { background:var(--white); border-color:var(--border-2); }
 
-  /* ── Card ── */
-  .vp-card {
-    background: var(--white); border: 1px solid var(--border);
-    border-radius: var(--r-xl); padding: 28px;
-    margin-bottom: 24px;
-    box-shadow: 0 1px 3px rgba(15,23,42,0.04);
-    transition: border-color .2s, box-shadow .25s;
-    animation: fadeUp .45s ease both .2s;
-    position: relative; overflow: hidden;
+  /* About card */
+  .vp-about-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r-lg); padding: 18px 20px; margin-top: 16px;
+    animation: fadeUp .4s ease both .15s;
   }
-  .vp-card::after {
-    content:''; position:absolute; top:0; right:0; width:180px; height:180px;
-    background:radial-gradient(ellipse at 100% 0%,rgba(37,99,235,0.04) 0%,transparent 70%);
-    pointer-events:none;
+  .vp-about-heading {
+    font-size: 9px; font-weight: 800; letter-spacing:.15em; text-transform:uppercase;
+    color: var(--ink-4); margin-bottom: 10px;
+    display:flex; align-items:center; gap:8px; font-family:var(--font-display);
   }
-  .vp-card:hover {
-    border-color: rgba(37,99,235,0.14);
-    box-shadow: 0 6px 22px rgba(37,99,235,0.08);
-  }
-  .vp-card-heading {
-    font-size: 9.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
-    color: var(--ink-4); margin-bottom: 14px;
-    display: flex; align-items: center; gap: 9px;
-    font-family: var(--font-display);
-  }
-  .vp-card-heading::before {
-    content:''; display:block; width:3px; height:14px;
+  .vp-about-heading::before {
+    content:''; display:block; width:3px; height:13px;
     background:linear-gradient(180deg,var(--b500),var(--b400)); border-radius:2px;
   }
-  .vp-card p { color: var(--ink-2); line-height: 1.85; font-size: 14px; font-weight: 400; margin: 0; }
-  .vp-hr { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+  .vp-about-card p { color:var(--ink-2); line-height:1.8; font-size:13px; }
+  .vp-hr { border:none; border-top:1px solid var(--border); margin:14px 0; }
 
-  /* ── Chat ── */
-  .vp-chat-section { margin-top: 24px; animation: fadeUp .45s ease both .25s; }
-  .vp-chat-label {
-    font-size: 9.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
-    color: var(--ink-4); margin-bottom: 12px;
-    display: flex; align-items: center; gap: 9px;
-    font-family: var(--font-display);
+  /* Alert */
+  .vp-alert {
+    display:flex; align-items:center; gap:8px;
+    background:var(--rose-lt); border:1px solid var(--rose-mid);
+    color:var(--rose); border-radius:var(--r);
+    padding:10px 14px; font-size:12px; margin-bottom:14px;
+    animation:fadeIn .3s ease;
   }
-  .vp-chat-label::before {
-    content:''; display:block; width:3px; height:14px;
-    background:linear-gradient(180deg,var(--b500),var(--b400)); border-radius:2px;
-  }
-  .vp-chat-wrap { height: 560px; display: flex; flex-direction: column; }
 
-  /* ══ TABLET: 768px–1024px ══ */
+  /* ── Chat Panel ── */
+  .vp-chat-panel {
+    flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden;
+    background: var(--white);
+  }
+
+  /* ══ MOBILE OVERLAY ══ */
+  .vp-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(5,15,43,0.5);
+    backdrop-filter: blur(2px);
+    animation: overlayIn .2s ease;
+  }
+  .vp-overlay.open { display: block; }
+
+  /* ══ TABLET ≤ 1024px ══ */
   @media (max-width: 1024px) {
-    :root { --sidebar-w: 240px; }
-    .vp-content { padding: 28px 28px 60px; }
+    :root { --sidebar-w: 248px; }
+    .vp-video-panel { flex: 0 0 54%; }
+    .vp-topstrip-title { max-width: 260px; }
   }
 
-  /* ══ MOBILE: ≤768px ══ */
-  @media (max-width: 768px) {
-    .vp-root { flex-direction: column; min-height: calc(100vh - 60px); }
+  /* ══ TABLET/MOBILE ≤ 820px: stack video+chat vertically ══ */
+  @media (max-width: 820px) {
+    .vp-body { height: auto; flex-direction: column; overflow: visible; }
 
-    /* Show mobile topbar */
-    .vp-mobile-bar { display: flex; }
-
-    /* Sidebar becomes a drawer */
+    /* Sidebar becomes drawer */
     .vp-sidebar {
       position: fixed; top: 0; left: 0; bottom: 0;
-      z-index: 300; width: 300px; min-width: 0;
+      z-index: 300; width: 288px !important; min-width: 288px !important;
       transform: translateX(-100%);
-      box-shadow: 4px 0 32px rgba(5,15,43,0.25);
+      box-shadow: 4px 0 32px rgba(5,15,43,0.28);
+      transition: transform .25s ease;
     }
-    .vp-sidebar.open {
+    .vp-sidebar.open-mobile {
       transform: translateX(0);
-      animation: slideIn .25s ease;
     }
-    .vp-sidebar-close { display: flex; }
+    .vp-sidebar.collapsed { width: 288px !important; min-width: 288px !important; }
 
-    /* Main takes full width */
-    .vp-main { width: 100%; overflow-y: visible; }
-    .vp-content { padding: 20px 16px 48px; }
-    .vp-main-hero { display: none; }
+    .vp-overlay { display: block; }
+    .vp-overlay:not(.open) { display: none; }
 
-    /* Crumb wraps nicely */
-    .vp-crumb { font-size: 11px; gap: 4px; }
+    .vp-content-row { flex-direction: column; overflow: visible; height: auto; }
+    .vp-video-panel  { flex: none; border-right: none; border-bottom: 1px solid var(--border); height: auto; }
+    .vp-chat-panel   { flex: none; height: 520px; }
+    .vp-video-body   { overflow: visible; }
+    .vp-main { overflow: auto; }
 
-    /* Title */
-    .vp-title { font-size: 20px; }
-    .vp-title-row { margin-bottom: 16px; gap: 10px; }
-
-    /* Buttons full-width on very small screens */
-    .vp-actions { gap: 8px; }
-    .vp-btn { padding: 10px 14px; font-size: 11px; }
-
-    /* Card padding tighter */
-    .vp-card { padding: 20px 18px; border-radius: var(--r-lg); }
-
-    /* Chat shorter on mobile */
-    .vp-chat-wrap { height: 420px; }
+    .vp-prog-pill { display: none; }
+    .vp-topstrip-title { max-width: 180px; }
   }
 
-  /* ══ SMALL MOBILE: ≤480px ══ */
-  @media (max-width: 480px) {
-    .vp-content { padding: 16px 12px 40px; }
-    .vp-title { font-size: 18px; }
+  @media (max-width: 540px) {
+    .vp-topstrip { padding: 0 12px; }
+    .vp-topstrip-title { max-width: 130px; font-size: 12px; }
+    .vp-topstrip-num { display: none; }
+    .vp-video-header { padding: 12px 14px 10px; }
+    .vp-title { font-size: 15px; }
+    .vp-video-body { padding: 12px 14px 16px; }
+    .vp-actions { gap: 6px; }
+    .vp-btn { padding: 8px 12px; font-size: 10px; }
+    .vp-chat-panel { height: 440px; }
+  }
+
+  @media (max-width: 380px) {
     .vp-actions { flex-direction: column; }
     .vp-btn { width: 100%; justify-content: center; }
-    .vp-card { padding: 16px 14px; }
-    .vp-chat-wrap { height: 360px; }
-    .vp-mobile-title { max-width: 120px; }
-    .vp-badge { font-size: 9.5px; padding: 4px 9px; }
+    .vp-chat-panel { height: 380px; }
   }
 `;
 
@@ -461,37 +492,48 @@ export default function VideoPlayer() {
   const navigate = useNavigate();
   const iframeRef = useRef(null);
 
-  const [lesson,       setLesson]       = useState(null);
-  const [lessons,      setLessons]      = useState([]);
-  const [otpData,      setOtpData]      = useState(null);
-  const [progress,     setProgress]     = useState(null);
-  const [loading,      setLoading]      = useState(true);
+  const [lesson, setLesson] = useState(null);
+  const [lessons, setLessons] = useState([]);
+  const [otpData, setOtpData] = useState(null);
+  const [progress, setProgress] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [videoLoading, setVideoLoading] = useState(false);
-  const [error,        setError]        = useState("");
-  const [watched,      setWatched]      = useState(false);
-  const [sidebarOpen,  setSidebarOpen]  = useState(false);
+  const [error, setError] = useState("");
+  const [watched, setWatched] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  const currentUser = useSelector(s => s.auth.user);
+  const currentUser = useSelector((s) => s.auth.user);
 
-  // Close sidebar on route change
-  useEffect(() => { setSidebarOpen(false); }, [lessonId]);
-
-  // Close sidebar on ESC key
+  // Detect mobile
   useEffect(() => {
-    const handleKey = e => { if (e.key === 'Escape') setSidebarOpen(false); };
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
+    const check = () => setIsMobile(window.innerWidth <= 820);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Prevent body scroll when sidebar is open on mobile
+  // Close mobile sidebar on route change
+  useEffect(() => { setMobileSidebarOpen(false); }, [lessonId]);
+
+  // ESC key closes mobile sidebar
   useEffect(() => {
-    if (sidebarOpen) document.body.style.overflow = 'hidden';
-    else document.body.style.overflow = '';
-    return () => { document.body.style.overflow = ''; };
-  }, [sidebarOpen]);
+    const handler = (e) => { if (e.key === "Escape") setMobileSidebarOpen(false); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
+
+  // Body scroll lock for mobile
+  useEffect(() => {
+    document.body.style.overflow = mobileSidebarOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileSidebarOpen]);
 
   useEffect(() => {
-    setLoading(true); setError(""); setOtpData(null);
+    setLoading(true);
+    setError("");
+    setOtpData(null);
     Promise.all([
       api.get(`/lessons/${lessonId}`),
       api.get(`/courses/${courseId}/lessons`),
@@ -502,54 +544,78 @@ export default function VideoPlayer() {
         setLessons(ll.data.data?.lessons || ll.data.lessons || []);
         setProgress(p.data.data?.progress || p.data.progress);
       })
-      .catch(err => setError(err.response?.data?.message || "Failed to load lesson"))
+      .catch((err) => setError(err.response?.data?.message || "Failed to load lesson"))
       .finally(() => setLoading(false));
   }, [courseId, lessonId]);
 
   useEffect(() => {
     if (!lesson?.video?.vdoCipherId) return;
-    setOtpData(null); setVideoLoading(true);
+    setOtpData(null);
+    setVideoLoading(true);
     api.get(`/lessons/${lessonId}/video-otp`)
-      .then(r => setOtpData(r.data.data || r.data))
-      .catch(err => setError(err.response?.data?.message || "Failed to load video"))
+      .then((r) => setOtpData(r.data.data || r.data))
+      .catch((err) => setError(err.response?.data?.message || "Failed to load video"))
       .finally(() => setVideoLoading(false));
   }, [lesson, lessonId]);
 
   const handleMarkWatched = async () => {
-    try { await api.post(`/progress/${courseId}/lessons/${lessonId}/watch`); setWatched(true); }
-    catch (err) { console.error(err); }
+    try {
+      await api.post(`/progress/${courseId}/lessons/${lessonId}/watch`);
+      setWatched(true);
+    } catch (err) { console.error(err); }
   };
 
-  const getLessonProgress = lid =>
-    progress?.lessons?.find(l => l.lesson?._id === lid || l.lesson === lid);
+  const getLessonProgress = (lid) =>
+    progress?.lessons?.find((l) => l.lesson?._id === lid || l.lesson === lid);
 
-  const currentIndex          = lessons.findIndex(l => l._id === lessonId);
-  const nextLesson            = lessons[currentIndex + 1];
-  const prevLesson            = lessons[currentIndex - 1];
+  const currentIndex = lessons.findIndex((l) => l._id === lessonId);
+  const nextLesson = lessons[currentIndex + 1];
+  const prevLesson = lessons[currentIndex - 1];
   const currentLessonProgress = getLessonProgress(lessonId);
-  const isUserAdmin           = currentUser?.role === 'admin' || currentUser?.role === 'instructor';
-  const isWatched             = isUserAdmin || watched || currentLessonProgress?.isWatched;
-  const isPassed              = isUserAdmin || currentLessonProgress?.examPassed;
-  const completedCount        = progress?.lessons?.filter(l => l.examPassed).length || 0;
-  const progressPct           = lessons.length > 0
-    ? Math.round((completedCount / lessons.length) * 100) : 0;
+  const isUserAdmin = currentUser?.role === "admin" || currentUser?.role === "instructor";
+  const isWatched = isUserAdmin || watched || currentLessonProgress?.isWatched;
+  const isPassed  = isUserAdmin || currentLessonProgress?.examPassed;
+  const completedCount = progress?.lessons?.filter((l) => l.examPassed).length || 0;
+  const progressPct = lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0;
 
   if (loading) return <LoadingCenter />;
+
+  const handleSidebarToggle = () => {
+    if (isMobile) {
+      setMobileSidebarOpen((v) => !v);
+    } else {
+      setSidebarCollapsed((v) => !v);
+    }
+  };
+
+  const sidebarCls = [
+    "vp-sidebar",
+    !isMobile && sidebarCollapsed ? "collapsed" : "",
+    isMobile && mobileSidebarOpen ? "open-mobile" : "",
+  ].filter(Boolean).join(" ");
 
   const SidebarContent = (
     <>
       <div className="vp-sidebar-top">
-        <button className="vp-sidebar-close" onClick={() => setSidebarOpen(false)}>✕</button>
-        <Link to={`/courses/${courseId}`} className="vp-back-link">
-          ← Back to course
-        </Link>
-        <div className="vp-prog-wrap">
-          <div className="vp-prog-label-row">
-            <span>Course Progress</span>
-            <em>{progressPct}%</em>
+        <div className="vp-sidebar-prog-label">
+          <span>Progress</span>
+          <em>{progressPct}%</em>
+        </div>
+        <div className="vp-sidebar-prog-track">
+          <div className="vp-sidebar-prog-fill" style={{ width: `${progressPct}%` }} />
+        </div>
+        <div className="vp-sidebar-stats">
+          <div className="vp-sidebar-stat">
+            <div className="vp-sidebar-stat-val">{completedCount}</div>
+            <div className="vp-sidebar-stat-label">Passed</div>
           </div>
-          <div className="vp-prog-track">
-            <div className="vp-prog-fill" style={{ width: `${progressPct}%` }} />
+          <div className="vp-sidebar-stat">
+            <div className="vp-sidebar-stat-val">{lessons.length}</div>
+            <div className="vp-sidebar-stat-label">Total</div>
+          </div>
+          <div className="vp-sidebar-stat">
+            <div className="vp-sidebar-stat-val">{lessons.length - completedCount}</div>
+            <div className="vp-sidebar-stat-label">Left</div>
           </div>
         </div>
       </div>
@@ -558,17 +624,24 @@ export default function VideoPlayer() {
 
       <div className="vp-lesson-list">
         {lessons.map((l, i) => {
-          const lp       = getLessonProgress(l._id);
+          const lp = getLessonProgress(l._id);
           const isActive = l._id === lessonId;
-          const isAdmin  = currentUser?.role === 'admin' || currentUser?.role === 'instructor';
+          const isAdmin  = currentUser?.role === "admin" || currentUser?.role === "instructor";
           const isLocked = !isAdmin && !l.isFreePreview && !lp?.isUnlocked;
           const dotClass = lp?.examPassed ? "ok" : lp?.isWatched ? "seen" : "";
           const icon     = lp?.examPassed ? "✓" : lp?.isWatched ? "◉" : isLocked ? "⊘" : "▷";
           const subLabel = lp?.examPassed ? "Passed" : lp?.isWatched ? "Watched" : isLocked ? "Locked" : "Available";
           return (
-            <div key={l._id}
+            <div
+              key={l._id}
               className={`vp-lesson-item${isActive ? " active" : ""}${isLocked ? " locked" : ""}`}
-              onClick={() => { if (!isLocked) { navigate(`/learn/${courseId}/lesson/${l._id}`); setSidebarOpen(false); } }}>
+              onClick={() => {
+                if (!isLocked) {
+                  navigate(`/learn/${courseId}/lesson/${l._id}`);
+                  setMobileSidebarOpen(false);
+                }
+              }}
+            >
               <span className="vp-lesson-num">{i + 1}</span>
               <div className={`vp-lesson-dot ${dotClass}`}>{icon}</div>
               <div className="vp-lesson-info">
@@ -587,122 +660,183 @@ export default function VideoPlayer() {
       <style>{styles}</style>
       <div className="vp-root">
 
-        {/* ── Mobile topbar ── */}
-        <div className="vp-mobile-bar">
-          <div className="vp-mobile-bar-left">
-            <button
-              className={`vp-hamburger${sidebarOpen ? ' open' : ''}`}
-              onClick={() => setSidebarOpen(v => !v)}
-              aria-label="Toggle lesson list"
-            >
-              <span /><span /><span />
-            </button>
-            <span className="vp-mobile-title">{lesson?.title}</span>
+        {/* ── Top strip ── */}
+        <div className="vp-topstrip">
+          <button
+            className="vp-toggle-sidebar-btn"
+            onClick={handleSidebarToggle}
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={sidebarCollapsed ? "Show lessons" : "Hide lessons"}
+          >
+            {/* Hamburger / panel icon */}
+            <svg viewBox="0 0 16 16">
+              {sidebarCollapsed || (isMobile && !mobileSidebarOpen)
+                ? <path d="M2 4h12v1.5H2V4zm0 3.25h12v1.5H2v-1.5zm0 3.25h12v1.5H2v-1.5z"/>
+                : <path d="M6 2h1.5v12H6V2zm-4 0h2.5v1.5H2V2zm0 3.25h2.5v1.5H2v-1.5zm0 3.25h2.5v1.5H2v-1.5zm0 3.25h2.5V13H2v-1.25zM8.5 2H14v1.5H8.5V2zm0 3.25H14v1.5H8.5v-1.5zm0 3.25H14v1.5H8.5v-1.5zm0 3.25H14V13H8.5v-1.25z"/>
+              }
+            </svg>
+          </button>
+
+          <Link to={`/courses/${courseId}`} className="vp-topstrip-back">
+            ← Course
+          </Link>
+          <div className="vp-topstrip-divider" />
+
+          <div className="vp-topstrip-lesson-info">
+            <div className="vp-topstrip-num">Lesson {currentIndex + 1}</div>
+            <div className="vp-topstrip-title">{lesson?.title}</div>
           </div>
-          <span className="vp-mobile-prog-pill">{progressPct}% done</span>
+
+          <div className="vp-topstrip-right">
+            <div className="vp-prog-pill">
+              <div className="vp-prog-pill-track">
+                <div className="vp-prog-pill-fill" style={{ width: `${progressPct}%` }} />
+              </div>
+              <span className="vp-prog-pill-label">{progressPct}% done</span>
+            </div>
+            {isWatched && !isPassed && (
+              <span className="vp-topstrip-badge vp-badge-watched">Watched</span>
+            )}
+            {isPassed && (
+              <span className="vp-topstrip-badge vp-badge-passed">✓ Passed</span>
+            )}
+          </div>
         </div>
 
-        {/* ── Overlay (mobile) ── */}
+        {/* ── Overlay for mobile drawer ── */}
         <div
-          className={`vp-overlay${sidebarOpen ? ' open' : ''}`}
-          onClick={() => setSidebarOpen(false)}
+          className={`vp-overlay${mobileSidebarOpen ? " open" : ""}`}
+          onClick={() => setMobileSidebarOpen(false)}
         />
 
-        {/* ── Sidebar ── */}
-        <div className={`vp-sidebar${sidebarOpen ? ' open' : ''}`}>
-          {SidebarContent}
-        </div>
+        {/* ── Body ── */}
+        <div className="vp-body">
 
-        {/* ── Main ── */}
-        <div className="vp-main">
-          <div className="vp-main-hero" />
-          <div className="vp-content">
+          {/* Sidebar */}
+          <div className={sidebarCls}>
+            {SidebarContent}
+          </div>
 
-            <div className="vp-crumb">
-              <Link to={`/courses/${courseId}`}>Course</Link>
-              <span className="vp-crumb-sep">›</span>
-              <span>Lesson {currentIndex + 1}</span>
-              <span className="vp-crumb-sep">›</span>
-              <span style={{ color: "var(--ink-2)" }}>{lesson?.title}</span>
-            </div>
+          {/* Main */}
+          <div className="vp-main">
+            <div className="vp-content-row">
 
-            <div className="vp-title-row">
-              <h1 className="vp-title">{lesson?.title}</h1>
-              <div className="vp-badges">
-                {isWatched && !isPassed && <span className="vp-badge vp-badge-watched">Watched</span>}
-                {isPassed && <span className="vp-badge vp-badge-passed">✓ Passed</span>}
-              </div>
-            </div>
+              {/* ── Video Panel ── */}
+              <div className="vp-video-panel">
+                <div className="vp-video-header">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="vp-crumb">
+                      <Link to={`/courses/${courseId}`}>Course</Link>
+                      <span className="vp-crumb-sep">›</span>
+                      <span>Lesson {currentIndex + 1}</span>
+                      <span className="vp-crumb-sep">›</span>
+                      <span style={{ color: "var(--ink-2)" }}>{lesson?.title}</span>
+                    </div>
+                    <h1 className="vp-title">{lesson?.title}</h1>
+                  </div>
+                  <div className="vp-badges">
+                    {isWatched && !isPassed && (
+                      <span className="vp-badge vp-badge-watched">Watched</span>
+                    )}
+                    {isPassed && (
+                      <span className="vp-badge vp-badge-passed">✓ Passed</span>
+                    )}
+                  </div>
+                </div>
 
-            {error && <div className="vp-alert"><span>⚠</span> {error}</div>}
-
-            {otpData?.otp && otpData?.playbackInfo ? (
-              <div className="vp-video-shell">
-                <iframe ref={iframeRef} title={lesson?.title}
-                  src={`https://player.vdocipher.com/v2/?otp=${otpData.otp}&playbackInfo=${otpData.playbackInfo}`}
-                  allowFullScreen allow="encrypted-media" />
-              </div>
-            ) : (
-              <div className="vp-video-placeholder">
-                <div className="vp-video-placeholder-in">
-                  {videoLoading ? (
-                    <><div className="vp-spinner" /><span className="vp-ph-text">Loading video…</span></>
-                  ) : (
-                    <><div className="vp-ph-icon">🎬</div>
-                    <span className="vp-ph-text">{error ? "Video unavailable" : "No video attached"}</span></>
+                <div className="vp-video-body">
+                  {error && (
+                    <div className="vp-alert"><span>⚠</span> {error}</div>
                   )}
+
+                  {otpData?.otp && otpData?.playbackInfo ? (
+                    <div className="vp-video-shell">
+                      <iframe
+                        ref={iframeRef}
+                        title={lesson?.title}
+                        src={`https://player.vdocipher.com/v2/?otp=${otpData.otp}&playbackInfo=${otpData.playbackInfo}`}
+                        allowFullScreen
+                        allow="encrypted-media"
+                      />
+                    </div>
+                  ) : (
+                    <div className="vp-video-placeholder">
+                      <div className="vp-video-placeholder-in">
+                        {videoLoading ? (
+                          <>
+                            <div className="vp-spinner" />
+                            <span className="vp-ph-text">Loading video…</span>
+                          </>
+                        ) : (
+                          <>
+                            <div className="vp-ph-icon">🎬</div>
+                            <span className="vp-ph-text">
+                              {error ? "Video unavailable" : "No video attached"}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="vp-actions">
+                    {prevLesson && (
+                      <button
+                        className="vp-btn vp-btn-ghost"
+                        onClick={() => navigate(`/learn/${courseId}/lesson/${prevLesson._id}`)}
+                      >
+                        ← Prev
+                      </button>
+                    )}
+                    {!isWatched && (
+                      <button className="vp-btn vp-btn-outline" onClick={handleMarkWatched}>
+                        ✓ Mark Watched
+                      </button>
+                    )}
+                    {isWatched && !isPassed && (
+                      <button
+                        className="vp-btn vp-btn-primary"
+                        onClick={() => navigate(`/learn/${courseId}/lesson/${lessonId}/exam`)}
+                      >
+                        Take Exam →
+                      </button>
+                    )}
+                    {isPassed && nextLesson && (
+                      <button
+                        className="vp-btn vp-btn-success"
+                        onClick={() => navigate(`/learn/${courseId}/lesson/${nextLesson._id}`)}
+                      >
+                        Next Lesson →
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="vp-about-card">
+                    <div className="vp-about-heading">About this lesson</div>
+                    <p>{lesson?.description}</p>
+                    {lesson?.notes && (
+                      <>
+                        <div className="vp-hr" />
+                        <div className="vp-about-heading">Notes</div>
+                        <p style={{ whiteSpace: "pre-wrap" }}>{lesson.notes}</p>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
-            )}
 
-            <div className="vp-actions">
-              {prevLesson && (
-                <button className="vp-btn vp-btn-ghost"
-                  onClick={() => navigate(`/learn/${courseId}/lesson/${prevLesson._id}`)}>
-                  ← Previous
-                </button>
-              )}
-              {!isWatched && (
-                <button className="vp-btn vp-btn-outline" onClick={handleMarkWatched}>
-                  ✓ Mark as Watched
-                </button>
-              )}
-              {isWatched && !isPassed && (
-                <button className="vp-btn vp-btn-primary"
-                  onClick={() => navigate(`/learn/${courseId}/lesson/${lessonId}/exam`)}>
-                  Take Exam →
-                </button>
-              )}
-              {isPassed && nextLesson && (
-                <button className="vp-btn vp-btn-success"
-                  onClick={() => navigate(`/learn/${courseId}/lesson/${nextLesson._id}`)}>
-                  Next Lesson →
-                </button>
-              )}
-            </div>
-
-            <div className="vp-card">
-              <div className="vp-card-heading">About this lesson</div>
-              <p>{lesson?.description}</p>
-              {lesson?.notes && (
-                <>
-                  <hr className="vp-hr" />
-                  <div className="vp-card-heading">Notes</div>
-                  <p style={{ whiteSpace: "pre-wrap" }}>{lesson.notes}</p>
-                </>
-              )}
-            </div>
-
-            <div className="vp-chat-section">
-              <div className="vp-chat-label">Discussion</div>
-              <div className="vp-chat-wrap">
-                <LessonChat courseId={courseId} lessonId={lessonId} currentUser={currentUser} />
+              {/* ── Chat Panel ── */}
+              <div className="vp-chat-panel">
+                <LessonChat
+                  courseId={courseId}
+                  lessonId={lessonId}
+                  currentUser={currentUser}
+                />
               </div>
-            </div>
 
+            </div>
           </div>
         </div>
-
       </div>
     </>
   );

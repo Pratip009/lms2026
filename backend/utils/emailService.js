@@ -1,19 +1,26 @@
 const nodemailer = require("nodemailer");
 
-// FIX: Render free tier blocks outbound IPv6.
-// Using service:"gmail" lets Node resolve Gmail's SMTP to an IPv6 address
-// (2607:...) which causes ENETUNREACH and silently kills email sending.
-// Fix: use explicit host + port + family:4 to force IPv4 only.
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 465,
-  secure: true, // true for port 465 (SSL)
-  family: 4,    // ← force IPv4, prevents ENETUNREACH on Render free tier
+  secure: true,
+  family: 4, // force IPv4 — fixes ENETUNREACH on Render free tier
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
 });
+
+// ─── Verify on startup ────────────────────────────────────
+const verifyEmailService = () => {
+  transporter.verify((error) => {
+    if (error) {
+      console.error("❌ Nodemailer failed:", error.message);
+    } else {
+      console.log("✅ Nodemailer is ready to send emails");
+    }
+  });
+};
 
 // ─── Base sender ──────────────────────────────────────────
 const sendMail = async ({ to, subject, html }) => {
@@ -64,7 +71,7 @@ const sendCourseCompletionEmail = (email, { name, courseName }) =>
   });
 
 module.exports = {
-  transporter, // ← exported so server.js can call transporter.verify()
+  verifyEmailService,
   sendOtpEmail,
   sendWelcomeEmail,
   sendPaymentSuccessEmail,

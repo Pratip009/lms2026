@@ -2,14 +2,8 @@ const express = require('express');
 const multer  = require('multer');
 const router  = express.Router({ mergeParams: true });
 
-// ── IMPORTANT ─────────────────────────────────────────────────────────
-// Change this path to match what your other route files use.
-// Run this to find out:
-//   grep -r "protect" D:\newlife2025\lmsnew\backend\routes\courseRoutes.js
-// ──────────────────────────────────────────────────────────────────────
 const { protect, authorize } = require('../middlewares/auth');
-
-const lessonChatController = require('../controllers/Lessonchatcontroller');
+const lessonChatController   = require('../controllers/Lessonchatcontroller');
 
 const ALLOWED_MIME = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp',
@@ -37,8 +31,8 @@ const upload = multer({
   },
 });
 
-// ── IMPORTANT: specific routes MUST come before param routes (:msgId)
-// otherwise Express matches "download" as a :msgId value
+// ── IMPORTANT: specific/static routes MUST come before param routes ──
+// Order matters — Express matches top-to-bottom.
 
 // GET  /api/courses/:courseId/lessons/:lessonId/chat
 router.get('/', protect, lessonChatController.getMessages);
@@ -46,8 +40,12 @@ router.get('/', protect, lessonChatController.getMessages);
 // POST /api/courses/:courseId/lessons/:lessonId/chat
 router.post('/', protect, upload.array('files', 5), lessonChatController.sendMessage);
 
+// GET  /api/courses/:courseId/lessons/:lessonId/chat/participants
+// ← Static route — must be BEFORE /:msgId routes
+router.get('/participants', protect, lessonChatController.getParticipants);
+
 // GET  /api/courses/:courseId/lessons/:lessonId/chat/download/:msgId/:fileIndex
-// ← Must be BEFORE /:msgId routes so "download" isn't treated as a msgId
+// ← Static prefix "download" — must be BEFORE /:msgId routes
 router.get('/download/:msgId/:fileIndex', protect, lessonChatController.downloadFile);
 
 // PATCH /api/courses/:courseId/lessons/:lessonId/chat/:msgId/resolve

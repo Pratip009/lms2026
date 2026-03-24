@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: [true, "Email is required"],
-      unique: true, // ← this already creates an index automatically
+      unique: true,
       lowercase: true,
       trim: true,
       match: [/^\S+@\S+\.\S+$/, "Please provide a valid email"],
@@ -43,7 +43,7 @@ const userSchema = new mongoose.Schema(
     },
     otp: {
       type: String,
-      select: false, // ← must be select: false
+      select: false,
     },
     otpExpires: {
       type: Date,
@@ -54,6 +54,15 @@ const userSchema = new mongoose.Schema(
     passwordResetToken: String,
     passwordResetExpires: Date,
     lastLogin: Date,
+
+    // ── NEW: updated on every chat poll + message send ──
+    // Used by the frontend to determine online/offline status.
+    // A user is considered "online" if lastActive is within the last 5 minutes.
+    lastActive: {
+      type: Date,
+      default: null,
+    },
+
     refreshToken: {
       type: String,
       select: false,
@@ -67,9 +76,9 @@ const userSchema = new mongoose.Schema(
 );
 
 // ─── Indexes ──────────────────────────────────────────────
-// NOTE: email index is already created by unique:true above — do NOT add it here
 userSchema.index({ role: 1 });
 userSchema.index({ createdAt: -1 });
+userSchema.index({ lastActive: -1 }); // ← for fast online-status queries
 
 // ─── Pre-save: hash password ──────────────────────────────
 userSchema.pre("save", async function (next) {

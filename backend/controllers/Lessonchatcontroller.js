@@ -1,5 +1,8 @@
 const asyncHandler  = require('express-async-handler');
 const LessonMessage = require('../models/Lessonmessage.js');
+const Enrollment    = require('../models/Enrollment.js');
+const User          = require('../models/User.js');
+const Course        = require('../models/Course.js');
 
 /* ── Cloudinary: lazy-init so missing .env vars don't
       crash the server on boot                          ── */
@@ -35,6 +38,9 @@ const cloudinaryPublicId = (url) => {
 exports.getMessages = asyncHandler(async (req, res) => {
   const { courseId, lessonId } = req.params;
 
+  // Track when this user was last seen
+  await User.findByIdAndUpdate(req.user._id, { lastActive: new Date() });
+
   const messages = await withPopulate(
     LessonMessage.find({ course: courseId, lesson: lessonId }).sort({ createdAt: 1 })
   ).lean();
@@ -44,6 +50,67 @@ exports.getMessages = asyncHandler(async (req, res) => {
   ).size;
 
   res.status(200).json({ success: true, data: { messages, participantCount } });
+});
+
+/* ════════════════════════════════════════════════════════
+   GET /api/courses/:courseId/lessons/:lessonId/chat/participants
+   Returns enrolled count + participant list with lastActive
+   so the frontend can show green/red online status.
+   Access: any authenticated user
+════════════════════════════════════════════════════════ */
+exports.getParticipants = asyncHandler(async (req, res) => {
+  const { courseId } = req.params;
+
+  // ── 1. Enrolled students ───────────────────────────────
+  const enrollments = await Enrollment.find({ course: courseId, isActive: true })
+    .select('student')
+    .lean();
+
+  const enrolledCount = enrollments.length;
+  const studentIds    = enrollments.map((e) => e.student);
+
+  const students = await User.find({ _id: { $in: studentIds }, isActive: true })
+    .select('name avatar role lastActive')
+    .lean();
+
+  // ── 2. Instructor(s) / admins ─────────────────────────
+  // Always include the course instructor + any admin who ever chatted here
+  const course = await Course.findById(courseId).select('instructor').lean();
+
+  const staffFromMessages = await LessonMessage.distinct('sender', { course: courseId });
+
+  const allStaffIds = [
+    ...new Set([
+      course?.instructor?.toString(),
+      ...staffFromMessages.map(String),
+    ].filter(Boolean)),
+  ];
+
+  // Exclude IDs already in the students list to avoid duplicates
+  const studentIdSet  = new Set(studentIds.map(String));
+  const staffOnlyIds  = allStaffIds.filter((id) => !studentIdSet.has(id));
+
+  const staffUsers = await User.find({
+    _id:      { $in: staffOnlyIds },
+    role:     { $in: ['admin', 'instructor'] },
+    isActive: true,
+  })
+    .select('name avatar role lastActive')
+    .lean();
+
+  // ── 3. Build response: admins first, then students ────
+  const participants = [...staffUsers, ...students].map((u) => ({
+    _id:        u._id,
+    name:       u.name,
+    role:       u.role,
+    avatar:     u.avatar,          // { url, publicId }
+    lastActive: u.lastActive || null,
+  }));
+
+  res.status(200).json({
+    success: true,
+    data: { enrolledCount, participants },
+  });
 });
 
 /* ════════════════════════════════════════════════════════
@@ -61,17 +128,19 @@ exports.sendMessage = asyncHandler(async (req, res) => {
     throw new Error('Message cannot be empty.');
   }
 
+  // Track last activity on every send
+  await User.findByIdAndUpdate(req.user._id, { lastActive: new Date() });
+
   const filesMeta = [];
   for (const file of req.files ?? []) {
     const dataUri = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
-    // Detect resource type: images/videos go as-is, everything else (PDF, doc, zip) = 'raw'
     const isImage = ['image/jpeg','image/png','image/gif','image/webp'].includes(file.mimetype);
     const isVideo = ['video/mp4'].includes(file.mimetype);
     const uploadResourceType = isImage ? 'image' : isVideo ? 'video' : 'raw';
 
-    const result  = await getCloudinary().uploader.upload(dataUri, {
+    const result = await getCloudinary().uploader.upload(dataUri, {
       resource_type: uploadResourceType,
-      type:          'upload',    // public delivery — NOT authenticated
+      type:          'upload',
       folder:        `lesson-chat/${courseId}/${lessonId}`,
       public_id:     `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`,
       use_filename:  false,
@@ -144,9 +213,6 @@ exports.deleteMessage = asyncHandler(async (req, res) => {
 
 /* ════════════════════════════════════════════════════════
    GET /api/courses/:courseId/lessons/:lessonId/chat/download/:msgId/:fileIndex
-   Proxies a Cloudinary file through the backend so the
-   browser never hits Cloudinary directly (fixes 401).
-   Access: any authenticated user
 ════════════════════════════════════════════════════════ */
 exports.downloadFile = asyncHandler(async (req, res) => {
   const { courseId, lessonId, msgId, fileIndex } = req.params;
@@ -167,18 +233,13 @@ exports.downloadFile = asyncHandler(async (req, res) => {
   const http  = require('http');
   const cld   = getCloudinary();
 
-  // Detect resource_type from the stored URL path segment
-  // Old uploads went to /image/ even for PDFs — we must match that exactly
   const resourceType = file.url.includes('/video/') ? 'video'
                      : file.url.includes('/raw/')   ? 'raw'
-                     : 'image'; // covers /image/ path (used for PDFs uploaded with auto)
+                     : 'image';
 
-  // Extract publicId — strip version prefix AND file extension
-  // e.g. lesson-chat/.../1773317426678-Offer_Letter_Pratip.pdf  (no ext in publicId)
-  const rawPublicId = cloudinaryPublicId(file.url); // already strips extension via regex
+  const rawPublicId = cloudinaryPublicId(file.url);
   console.log('[Download] resourceType:', resourceType, 'publicId:', rawPublicId);
 
-  // Use Cloudinary API to generate a proper signed download URL
   const signedUrl = cld.utils.private_download_url(rawPublicId, '', {
     resource_type: resourceType,
     type:          'upload',
@@ -194,7 +255,7 @@ exports.downloadFile = asyncHandler(async (req, res) => {
       if (!res.headersSent) {
         res.status(502).json({ success: false, message: `Storage returned ${cloudRes.statusCode}` });
       }
-      cloudRes.resume(); // drain the response
+      cloudRes.resume();
       return;
     }
     const safeName = encodeURIComponent(file.name);
