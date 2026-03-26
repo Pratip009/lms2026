@@ -63,7 +63,7 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-  }),
+  })
 );
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
@@ -74,16 +74,18 @@ if (process.env.NODE_ENV === "development") {
   app.use(
     morgan("combined", {
       stream: { write: (msg) => logger.info(msg.trim()) },
-    }),
+    })
   );
 }
 
 // ─── Global rate limiter ──────────────────────────────────
+// Raised from 100 → 300 so normal API usage isn't throttled
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000,
-  max: parseInt(process.env.RATE_LIMIT_MAX) || 100,
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000, // 15 min
+  max: parseInt(process.env.RATE_LIMIT_MAX) || 300,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.method === "OPTIONS",
   message: {
     success: false,
     message: "Too many requests, please try again later.",
@@ -95,12 +97,45 @@ app.use("/api", limiter);
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
+  skip: (req) => req.method === "OPTIONS",
   message: {
     success: false,
     message: "Too many auth attempts, please try again in 15 minutes.",
   },
 });
 app.use("/api/auth", authLimiter);
+
+// ─── Chat rate limiter ────────────────────────────────────
+// Much more generous than the global limiter because the frontend
+// polls /chat and /chat/participants on a repeating interval.
+// Using per-user key (not per-IP) so shared networks aren't penalised.
+const chatLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 600,                  // ~40 req/min sustained — well above polling needs
+  standardHeaders: true,
+  legacyHeaders: false,
+  // req.user is populated by protect() middleware in each route handler,
+  // but rate limiting runs before route handlers. We fall back to IP here;
+  // the large max means IP-level collisions aren't a practical problem.
+  keyGenerator: (req) => {
+    // Authorization header carries the JWT — extract sub as key if possible
+    try {
+      const token = (req.headers.authorization || "").replace("Bearer ", "");
+      if (token) {
+        const payload = JSON.parse(
+          Buffer.from(token.split(".")[1], "base64").toString()
+        );
+        if (payload?.id || payload?.sub) return `chat_${payload.id || payload.sub}`;
+      }
+    } catch (_) {}
+    return `chat_ip_${req.ip}`;
+  },
+  skip: (req) => req.method === "OPTIONS",
+  message: {
+    success: false,
+    message: "Too many chat requests, please try again later.",
+  },
+});
 
 // ─── Health check ─────────────────────────────────────────
 app.get("/api/health", (req, res) => {
@@ -123,7 +158,14 @@ app.use("/api/enrollments", enrollmentRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/courses/:courseId/lessons/:lessonId/chat", lessonChatRoutes);
+
+// Chat gets its own limiter — must be registered BEFORE the generic
+// /api/courses route so Express uses chatLimiter for this path.
+app.use(
+  "/api/courses/:courseId/lessons/:lessonId/chat",
+  chatLimiter,
+  lessonChatRoutes
+);
 
 // ─── 404 & Error handlers ─────────────────────────────────
 app.use(notFound);
@@ -133,7 +175,7 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
   console.log(
-    `🚀 LMS Server running in ${process.env.NODE_ENV} mode on port ${PORT}`,
+    `🚀 LMS Server running in ${process.env.NODE_ENV} mode on port ${PORT}`
   );
 });
 

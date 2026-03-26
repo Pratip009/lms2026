@@ -21,37 +21,86 @@ const ALLOWED_MIME = new Set([
   'audio/mpeg',
 ]);
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024, files: 5 },
-  fileFilter: (_req, file, cb) => {
-    ALLOWED_MIME.has(file.mimetype)
-      ? cb(null, true)
-      : cb(new Error(`File type not allowed: ${file.mimetype}`));
-  },
-});
+const uploadMiddleware = (req, res, next) => {
+  console.log("[uploadMiddleware] ── Incoming request ──────────────────");
+  console.log("[uploadMiddleware] method         :", req.method);
+  console.log("[uploadMiddleware] url            :", req.originalUrl);
+  console.log("[uploadMiddleware] content-type   :", req.headers["content-type"]);
+  console.log("[uploadMiddleware] content-length :", req.headers["content-length"]);
 
-// ── IMPORTANT: specific/static routes MUST come before param routes ──
-// Order matters — Express matches top-to-bottom.
+  // CRITICAL CHECK: if content-type is application/json, multer will never
+  // find the files — the frontend is setting Content-Type manually.
+  if (req.headers["content-type"]?.includes("application/json")) {
+    console.error("[uploadMiddleware] ✗ FATAL: Content-Type is application/json!");
+    console.error("[uploadMiddleware] ✗ FormData uploads require multipart/form-data.");
+    console.error("[uploadMiddleware] ✗ Your axios instance is likely setting Content-Type globally.");
+    console.error("[uploadMiddleware] ✗ Fix: pass { headers: { 'Content-Type': undefined } } in the request.");
+  }
 
-// GET  /api/courses/:courseId/lessons/:lessonId/chat
-router.get('/', protect, lessonChatController.getMessages);
+  if (!req.headers["content-type"]?.includes("multipart/form-data")) {
+    console.warn("[uploadMiddleware] ⚠ content-type is NOT multipart/form-data — files will not be parsed.");
+  } else {
+    console.log("[uploadMiddleware] ✓ content-type looks correct (multipart/form-data)");
+  }
 
-// POST /api/courses/:courseId/lessons/:lessonId/chat
-router.post('/', protect, upload.array('files', 5), lessonChatController.sendMessage);
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits:  { fileSize: 20 * 1024 * 1024, files: 5 },
+    fileFilter: (_req, file, cb) => {
+      console.log("[uploadMiddleware] fileFilter ──────────────────────────");
+      console.log("[uploadMiddleware]   fieldname   :", file.fieldname);
+      console.log("[uploadMiddleware]   originalname:", file.originalname);
+      console.log("[uploadMiddleware]   mimetype    :", file.mimetype);
 
-// GET  /api/courses/:courseId/lessons/:lessonId/chat/participants
-// ← Static route — must be BEFORE /:msgId routes
-router.get('/participants', protect, lessonChatController.getParticipants);
+      if (ALLOWED_MIME.has(file.mimetype)) {
+        console.log("[uploadMiddleware] ✓ Accepted:", file.originalname, "(", file.mimetype, ")");
+        cb(null, true);
+      } else {
+        console.warn("[uploadMiddleware] ✗ Rejected (MIME not in allowlist):", file.mimetype);
+        cb(new Error(`File type not allowed: ${file.mimetype}`));
+      }
+    },
+  }).array("files", 5);
 
-// GET  /api/courses/:courseId/lessons/:lessonId/chat/download/:msgId/:fileIndex
-// ← Static prefix "download" — must be BEFORE /:msgId routes
-router.get('/download/:msgId/:fileIndex', protect, lessonChatController.downloadFile);
+  upload(req, res, (err) => {
+    if (err) {
+      console.error("[uploadMiddleware] ✗ Multer error:", err.message);
+      console.error("[uploadMiddleware]   error type:", err.constructor?.name);
+      if (err.code) console.error("[uploadMiddleware]   error code:", err.code);
+      return res.status(400).json({ success: false, message: err.message });
+    }
 
-// PATCH /api/courses/:courseId/lessons/:lessonId/chat/:msgId/resolve
-router.patch('/:msgId/resolve', protect, authorize('admin', 'instructor'), lessonChatController.resolveMessage);
+    console.log("[uploadMiddleware] ✓ Multer finished parsing");
+    console.log("[uploadMiddleware]   req.files count:", req.files?.length ?? 0);
+    console.log("[uploadMiddleware]   req.body keys  :", Object.keys(req.body || {}));
 
-// DELETE /api/courses/:courseId/lessons/:lessonId/chat/:msgId
-router.delete('/:msgId', protect, lessonChatController.deleteMessage);
+    if (!req.files || req.files.length === 0) {
+      console.warn("[uploadMiddleware] ⚠ req.files is empty after parsing.");
+      console.warn("[uploadMiddleware] ⚠ Possible causes:");
+      console.warn("[uploadMiddleware]   1. Frontend FormData field name is not 'files'");
+      console.warn("[uploadMiddleware]   2. No files were actually attached");
+      console.warn("[uploadMiddleware]   3. Content-Type header was overridden");
+    } else {
+      req.files.forEach((f, i) => {
+        console.log(`[uploadMiddleware]   parsed file[${i}]: ${f.originalname} | ${f.mimetype} | ${f.size} bytes`);
+      });
+    }
+
+    next();
+  });
+};
+
+/* ── IMPORTANT: static / prefix routes MUST come before param routes ──
+   Express matches top-to-bottom. Any route with a fixed string segment
+   (participants, heartbeat, download) must be registered before /:msgId
+   or Express will treat the fixed string as the msgId value.           */
+
+router.get("/",           protect, lessonChatController.getMessages);
+router.post("/",          protect, uploadMiddleware, lessonChatController.sendMessage);
+router.get("/participants", protect, lessonChatController.getParticipants);
+router.post("/heartbeat", protect, lessonChatController.heartbeat);
+router.get("/download/:msgId/:fileIndex", protect, lessonChatController.downloadFile);
+router.patch("/:msgId/resolve", protect, authorize("admin", "instructor"), lessonChatController.resolveMessage);
+router.delete("/:msgId", protect, lessonChatController.deleteMessage);
 
 module.exports = router;
