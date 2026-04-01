@@ -414,12 +414,28 @@ const styles = `
     padding:10px 14px; font-size:12px; margin-bottom:14px;
     animation:fadeIn .3s ease;
   }
-
+.lc-emoji-picker {
+  position: absolute; bottom: 56px; left: 0;
+  background: var(--c-surface); border: 1px solid var(--c-border2);
+  border-radius: var(--r-lg); padding: 10px;
+  box-shadow: 0 8px 32px rgba(15,23,42,0.15);
+  z-index: 50; width: 300px;
+  animation: lc-fadeUp .18s ease both;
+}
+.lc-emoji-cats { display: flex; gap: 2px; margin-bottom: 8px; border-bottom: 1px solid var(--c-border); padding-bottom: 8px; }
+.lc-emoji-cat-btn { flex: 1; padding: 5px; border: none; background: none; cursor: pointer; font-size: 15px; border-radius: var(--r-sm); transition: background .12s; }
+.lc-emoji-cat-btn:hover, .lc-emoji-cat-btn.active { background: var(--c-surface2); }
+.lc-emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; max-height: 180px; overflow-y: auto; scrollbar-width: thin; }
+.lc-emoji-btn { border: none; background: none; cursor: pointer; font-size: 20px; padding: 4px; border-radius: 6px; transition: background .1s; text-align: center; line-height: 1.4; }
+.lc-emoji-btn:hover { background: var(--c-surface2); }
   /* ── Chat Panel ── */
   .vp-chat-panel {
-    flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden;
-    background: var(--white);
-  }
+  flex: 1; min-width: 0; display: flex; flex-direction: column;
+  overflow: hidden;
+  background: var(--white);
+  height: calc(100vh - var(--topbar-h) - 52px);
+  max-height: calc(100vh - var(--topbar-h) - 52px);
+}
 
   /* ══ MOBILE OVERLAY ══ */
   .vp-overlay {
@@ -515,11 +531,15 @@ export default function VideoPlayer() {
   }, []);
 
   // Close mobile sidebar on route change
-  useEffect(() => { setMobileSidebarOpen(false); }, [lessonId]);
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [lessonId]);
 
   // ESC key closes mobile sidebar
   useEffect(() => {
-    const handler = (e) => { if (e.key === "Escape") setMobileSidebarOpen(false); };
+    const handler = (e) => {
+      if (e.key === "Escape") setMobileSidebarOpen(false);
+    };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, []);
@@ -527,7 +547,9 @@ export default function VideoPlayer() {
   // Body scroll lock for mobile
   useEffect(() => {
     document.body.style.overflow = mobileSidebarOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [mobileSidebarOpen]);
 
   useEffect(() => {
@@ -537,14 +559,18 @@ export default function VideoPlayer() {
     Promise.all([
       api.get(`/lessons/${lessonId}`),
       api.get(`/courses/${courseId}/lessons`),
-      api.get(`/progress/${courseId}`).catch(() => ({ data: { data: { progress: null } } })),
+      api
+        .get(`/progress/${courseId}`)
+        .catch(() => ({ data: { data: { progress: null } } })),
     ])
       .then(([l, ll, p]) => {
         setLesson(l.data.data?.lesson || l.data.lesson);
         setLessons(ll.data.data?.lessons || ll.data.lessons || []);
         setProgress(p.data.data?.progress || p.data.progress);
       })
-      .catch((err) => setError(err.response?.data?.message || "Failed to load lesson"))
+      .catch((err) =>
+        setError(err.response?.data?.message || "Failed to load lesson"),
+      )
       .finally(() => setLoading(false));
   }, [courseId, lessonId]);
 
@@ -552,9 +578,12 @@ export default function VideoPlayer() {
     if (!lesson?.video?.vdoCipherId) return;
     setOtpData(null);
     setVideoLoading(true);
-    api.get(`/lessons/${lessonId}/video-otp`)
+    api
+      .get(`/lessons/${lessonId}/video-otp`)
       .then((r) => setOtpData(r.data.data || r.data))
-      .catch((err) => setError(err.response?.data?.message || "Failed to load video"))
+      .catch((err) =>
+        setError(err.response?.data?.message || "Failed to load video"),
+      )
       .finally(() => setVideoLoading(false));
   }, [lesson, lessonId]);
 
@@ -562,7 +591,9 @@ export default function VideoPlayer() {
     try {
       await api.post(`/progress/${courseId}/lessons/${lessonId}/watch`);
       setWatched(true);
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const getLessonProgress = (lid) =>
@@ -572,11 +603,16 @@ export default function VideoPlayer() {
   const nextLesson = lessons[currentIndex + 1];
   const prevLesson = lessons[currentIndex - 1];
   const currentLessonProgress = getLessonProgress(lessonId);
-  const isUserAdmin = currentUser?.role === "admin" || currentUser?.role === "instructor";
+  const isUserAdmin =
+    currentUser?.role === "admin" || currentUser?.role === "instructor";
   const isWatched = isUserAdmin || watched || currentLessonProgress?.isWatched;
-  const isPassed  = isUserAdmin || currentLessonProgress?.examPassed;
-  const completedCount = progress?.lessons?.filter((l) => l.examPassed).length || 0;
-  const progressPct = lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0;
+  const isPassed = isUserAdmin || currentLessonProgress?.examPassed;
+  const completedCount =
+    progress?.lessons?.filter((l) => l.examPassed).length || 0;
+  const progressPct =
+    lessons.length > 0
+      ? Math.round((completedCount / lessons.length) * 100)
+      : 0;
 
   if (loading) return <LoadingCenter />;
 
@@ -592,7 +628,9 @@ export default function VideoPlayer() {
     "vp-sidebar",
     !isMobile && sidebarCollapsed ? "collapsed" : "",
     isMobile && mobileSidebarOpen ? "open-mobile" : "",
-  ].filter(Boolean).join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const SidebarContent = (
     <>
@@ -602,7 +640,10 @@ export default function VideoPlayer() {
           <em>{progressPct}%</em>
         </div>
         <div className="vp-sidebar-prog-track">
-          <div className="vp-sidebar-prog-fill" style={{ width: `${progressPct}%` }} />
+          <div
+            className="vp-sidebar-prog-fill"
+            style={{ width: `${progressPct}%` }}
+          />
         </div>
         <div className="vp-sidebar-stats">
           <div className="vp-sidebar-stat">
@@ -614,7 +655,9 @@ export default function VideoPlayer() {
             <div className="vp-sidebar-stat-label">Total</div>
           </div>
           <div className="vp-sidebar-stat">
-            <div className="vp-sidebar-stat-val">{lessons.length - completedCount}</div>
+            <div className="vp-sidebar-stat-val">
+              {lessons.length - completedCount}
+            </div>
             <div className="vp-sidebar-stat-label">Left</div>
           </div>
         </div>
@@ -626,11 +669,24 @@ export default function VideoPlayer() {
         {lessons.map((l, i) => {
           const lp = getLessonProgress(l._id);
           const isActive = l._id === lessonId;
-          const isAdmin  = currentUser?.role === "admin" || currentUser?.role === "instructor";
+          const isAdmin =
+            currentUser?.role === "admin" || currentUser?.role === "instructor";
           const isLocked = !isAdmin && !l.isFreePreview && !lp?.isUnlocked;
           const dotClass = lp?.examPassed ? "ok" : lp?.isWatched ? "seen" : "";
-          const icon     = lp?.examPassed ? "✓" : lp?.isWatched ? "◉" : isLocked ? "⊘" : "▷";
-          const subLabel = lp?.examPassed ? "Passed" : lp?.isWatched ? "Watched" : isLocked ? "Locked" : "Available";
+          const icon = lp?.examPassed
+            ? "✓"
+            : lp?.isWatched
+              ? "◉"
+              : isLocked
+                ? "⊘"
+                : "▷";
+          const subLabel = lp?.examPassed
+            ? "Passed"
+            : lp?.isWatched
+              ? "Watched"
+              : isLocked
+                ? "Locked"
+                : "Available";
           return (
             <div
               key={l._id}
@@ -659,21 +715,23 @@ export default function VideoPlayer() {
     <>
       <style>{styles}</style>
       <div className="vp-root">
-
         {/* ── Top strip ── */}
         <div className="vp-topstrip">
           <button
             className="vp-toggle-sidebar-btn"
             onClick={handleSidebarToggle}
-            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={
+              sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+            }
             title={sidebarCollapsed ? "Show lessons" : "Hide lessons"}
           >
             {/* Hamburger / panel icon */}
             <svg viewBox="0 0 16 16">
-              {sidebarCollapsed || (isMobile && !mobileSidebarOpen)
-                ? <path d="M2 4h12v1.5H2V4zm0 3.25h12v1.5H2v-1.5zm0 3.25h12v1.5H2v-1.5z"/>
-                : <path d="M6 2h1.5v12H6V2zm-4 0h2.5v1.5H2V2zm0 3.25h2.5v1.5H2v-1.5zm0 3.25h2.5v1.5H2v-1.5zm0 3.25h2.5V13H2v-1.25zM8.5 2H14v1.5H8.5V2zm0 3.25H14v1.5H8.5v-1.5zm0 3.25H14v1.5H8.5v-1.5zm0 3.25H14V13H8.5v-1.25z"/>
-              }
+              {sidebarCollapsed || (isMobile && !mobileSidebarOpen) ? (
+                <path d="M2 4h12v1.5H2V4zm0 3.25h12v1.5H2v-1.5zm0 3.25h12v1.5H2v-1.5z" />
+              ) : (
+                <path d="M6 2h1.5v12H6V2zm-4 0h2.5v1.5H2V2zm0 3.25h2.5v1.5H2v-1.5zm0 3.25h2.5v1.5H2v-1.5zm0 3.25h2.5V13H2v-1.25zM8.5 2H14v1.5H8.5V2zm0 3.25H14v1.5H8.5v-1.5zm0 3.25H14v1.5H8.5v-1.5zm0 3.25H14V13H8.5v-1.25z" />
+              )}
             </svg>
           </button>
 
@@ -690,15 +748,22 @@ export default function VideoPlayer() {
           <div className="vp-topstrip-right">
             <div className="vp-prog-pill">
               <div className="vp-prog-pill-track">
-                <div className="vp-prog-pill-fill" style={{ width: `${progressPct}%` }} />
+                <div
+                  className="vp-prog-pill-fill"
+                  style={{ width: `${progressPct}%` }}
+                />
               </div>
               <span className="vp-prog-pill-label">{progressPct}% done</span>
             </div>
             {isWatched && !isPassed && (
-              <span className="vp-topstrip-badge vp-badge-watched">Watched</span>
+              <span className="vp-topstrip-badge vp-badge-watched">
+                Watched
+              </span>
             )}
             {isPassed && (
-              <span className="vp-topstrip-badge vp-badge-passed">✓ Passed</span>
+              <span className="vp-topstrip-badge vp-badge-passed">
+                ✓ Passed
+              </span>
             )}
           </div>
         </div>
@@ -711,16 +776,12 @@ export default function VideoPlayer() {
 
         {/* ── Body ── */}
         <div className="vp-body">
-
           {/* Sidebar */}
-          <div className={sidebarCls}>
-            {SidebarContent}
-          </div>
+          <div className={sidebarCls}>{SidebarContent}</div>
 
           {/* Main */}
           <div className="vp-main">
             <div className="vp-content-row">
-
               {/* ── Video Panel ── */}
               <div className="vp-video-panel">
                 <div className="vp-video-header">
@@ -730,7 +791,9 @@ export default function VideoPlayer() {
                       <span className="vp-crumb-sep">›</span>
                       <span>Lesson {currentIndex + 1}</span>
                       <span className="vp-crumb-sep">›</span>
-                      <span style={{ color: "var(--ink-2)" }}>{lesson?.title}</span>
+                      <span style={{ color: "var(--ink-2)" }}>
+                        {lesson?.title}
+                      </span>
                     </div>
                     <h1 className="vp-title">{lesson?.title}</h1>
                   </div>
@@ -746,7 +809,9 @@ export default function VideoPlayer() {
 
                 <div className="vp-video-body">
                   {error && (
-                    <div className="vp-alert"><span>⚠</span> {error}</div>
+                    <div className="vp-alert">
+                      <span>⚠</span> {error}
+                    </div>
                   )}
 
                   {otpData?.otp && otpData?.playbackInfo ? (
@@ -771,7 +836,9 @@ export default function VideoPlayer() {
                           <>
                             <div className="vp-ph-icon">🎬</div>
                             <span className="vp-ph-text">
-                              {error ? "Video unavailable" : "No video attached"}
+                              {error
+                                ? "Video unavailable"
+                                : "No video attached"}
                             </span>
                           </>
                         )}
@@ -783,20 +850,29 @@ export default function VideoPlayer() {
                     {prevLesson && (
                       <button
                         className="vp-btn vp-btn-ghost"
-                        onClick={() => navigate(`/learn/${courseId}/lesson/${prevLesson._id}`)}
+                        onClick={() =>
+                          navigate(
+                            `/learn/${courseId}/lesson/${prevLesson._id}`,
+                          )
+                        }
                       >
                         ← Prev
                       </button>
                     )}
                     {!isWatched && (
-                      <button className="vp-btn vp-btn-outline" onClick={handleMarkWatched}>
+                      <button
+                        className="vp-btn vp-btn-outline"
+                        onClick={handleMarkWatched}
+                      >
                         ✓ Mark Watched
                       </button>
                     )}
                     {isWatched && !isPassed && (
                       <button
                         className="vp-btn vp-btn-primary"
-                        onClick={() => navigate(`/learn/${courseId}/lesson/${lessonId}/exam`)}
+                        onClick={() =>
+                          navigate(`/learn/${courseId}/lesson/${lessonId}/exam`)
+                        }
                       >
                         Take Exam →
                       </button>
@@ -804,7 +880,11 @@ export default function VideoPlayer() {
                     {isPassed && nextLesson && (
                       <button
                         className="vp-btn vp-btn-success"
-                        onClick={() => navigate(`/learn/${courseId}/lesson/${nextLesson._id}`)}
+                        onClick={() =>
+                          navigate(
+                            `/learn/${courseId}/lesson/${nextLesson._id}`,
+                          )
+                        }
                       >
                         Next Lesson →
                       </button>
@@ -833,7 +913,6 @@ export default function VideoPlayer() {
                   currentUser={currentUser}
                 />
               </div>
-
             </div>
           </div>
         </div>

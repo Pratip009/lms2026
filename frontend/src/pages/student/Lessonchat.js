@@ -2,10 +2,10 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import api from "../../services/api";
 
 // ─── Poll intervals ───────────────────────────────────────
-const POLL_MESSAGES_MS     = 10000;
+const POLL_MESSAGES_MS = 10000;
 const POLL_PARTICIPANTS_MS = 30000;
-const HEARTBEAT_MS         = 2 * 60 * 1000;
-const ONLINE_THRESHOLD_MS  = 5 * 60 * 1000;
+const HEARTBEAT_MS = 2 * 60 * 1000;
+const ONLINE_THRESHOLD_MS = 5 * 60 * 1000;
 const ACCEPT_TYPES =
   ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp,.zip,.txt,.mp4,.mp3";
 
@@ -58,6 +58,7 @@ const styles = `
     background: var(--c-bg);
     overflow: hidden;
     position: relative;
+    
   }
 
   @keyframes lc-spin    { to { transform: rotate(360deg); } }
@@ -131,7 +132,7 @@ const styles = `
   .lc-tab:hover { color: var(--c-ink2); background: var(--c-surface2); }
   .lc-tab.active { background: var(--c-blue50); color: var(--c-blue600); border-color: var(--c-blue200); }
 
-  .lc-body { flex: 1; min-height: 0; display: flex; overflow: hidden; }
+  .lc-body { flex: 1; min-height: 0; display: flex; overflow: hidden;min-height: 0; }
 
   .lc-participants {
     width: 200px; flex-shrink: 0; border-left: 1px solid var(--c-border);
@@ -198,7 +199,7 @@ const styles = `
   .lc-p-online-status { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--c-green); font-weight: 600; }
   .lc-p-online-status::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--c-green); animation: lc-pulse 2.4s ease-in-out infinite; }
 
-  .lc-chat-col { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .lc-chat-col { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden;min-height: 0; }
 
   .lc-messages {
     flex: 1; overflow-y: auto; padding: 20px 20px 12px;
@@ -330,7 +331,152 @@ const styles = `
 
   .lc-hint { margin-top: 7px; font-size: 10.5px; color: var(--c-ink5); display: flex; align-items: center; gap: 5px; }
   .lc-hint kbd { padding: 1px 5px; border: 1px solid var(--c-border2); border-radius: 4px; font-size: 10px; font-family: var(--f-body); background: var(--c-surface2); color: var(--c-ink4); }
+The issue is that the picker is using position: absolute; bottom: calc(100% + 10px) which opens it upward, but when there's not enough space above, it clips. Also the picker itself has a fixed max-height: 200px grid causing internal scroll. Here are the two fixes:
+1. Open the picker downward instead of upward — change the positioning in the CSS:
+css/* REPLACE this in .lc-emoji-picker */
+.lc-emoji-picker {
+    position: absolute;
+    bottom: calc(100% + 10px);   /* ← REMOVE these two lines */
+    left: 50%;
+    transform: translateX(-50%);
 
+    /* REPLACE WITH: opens downward, anchored to right edge */
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    left: auto;
+    transform: none;
+
+    width: 288px;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border2);
+    border-radius: var(--r-xl);
+    box-shadow: 0 8px 32px rgba(15,23,42,0.14), 0 2px 8px rgba(15,23,42,0.08);
+    overflow: hidden;
+    animation: ep-popUp 0.18s cubic-bezier(0.34,1.56,0.64,1) both;
+    z-index: 100;
+}
+  @keyframes ep-popUp {
+    from { opacity: 0; transform: scale(0.9) translateY(-8px); }
+    to   { opacity: 1; transform: scale(1)   translateY(0);    }
+}
+
+  .lc-emoji-cats {
+    display: flex;
+    gap: 2px;
+    padding: 10px 10px 0;
+    border-bottom: 1px solid var(--c-border);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .lc-emoji-cats::-webkit-scrollbar { display: none; }
+
+  .lc-emoji-cat-btn {
+    flex-shrink: 0;
+    width: 34px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: var(--r-sm);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.13s;
+    position: relative;
+  }
+  .lc-emoji-cat-btn:hover { background: var(--c-surface2); }
+  .lc-emoji-cat-btn.active { background: var(--c-blue50); }
+  .lc-emoji-cat-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 2.5px;
+    background: var(--c-blue500);
+    border-radius: 2px 2px 0 0;
+  }
+
+  .lc-emoji-search {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--c-border);
+  }
+  .lc-emoji-search-wrap { position: relative; }
+  .lc-emoji-search-icon {
+    position: absolute;
+    left: 9px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: var(--c-ink4);
+    pointer-events: none;
+  }
+  .lc-emoji-search-input {
+    width: 100%;
+    padding: 6px 10px 6px 28px;
+    background: var(--c-bg);
+    border: 1px solid var(--c-border2);
+    border-radius: var(--r-sm);
+    font-size: 12px;
+    font-family: var(--f-body);
+    color: var(--c-ink);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    box-sizing: border-box;
+  }
+  .lc-emoji-search-input:focus {
+    border-color: var(--c-blue500);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    background: var(--c-surface);
+  }
+  .lc-emoji-search-input::placeholder { color: var(--c-ink4); }
+
+ /* REPLACE max-height in .lc-emoji-grid */
+.lc-emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 2px;
+    padding: 8px 8px 10px;
+    max-height: none;      /* ← was 200px, remove the cap */
+    overflow-y: visible;   /* ← no scroll */
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-border) transparent;
+}
+  .lc-emoji-grid::-webkit-scrollbar { width: 4px; }
+  .lc-emoji-grid::-webkit-scrollbar-thumb { background: var(--c-border); border-radius: 4px; }
+
+  .lc-emoji-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: var(--r-sm);
+    font-size: 17px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s, transform 0.12s;
+    line-height: 1;
+  }
+  .lc-emoji-btn:hover { background: var(--c-surface2); transform: scale(1.18); }
+  .lc-emoji-btn:active { transform: scale(0.95); }
+
+  .lc-emoji-footer {
+    padding: 6px 12px 8px;
+    border-top: 1px solid var(--c-border);
+    font-size: 10.5px;
+    color: var(--c-ink4);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 30px;
+    font-family: var(--f-display);
+  }
+  .lc-emoji-footer-preview { font-size: 16px; }
   @media (max-width: 540px) {
     .lc-participants { display: none !important; }
     .lc-header { padding: 12px 14px; }
@@ -342,39 +488,73 @@ const styles = `
 `;
 
 // ─── Helpers ─────────────────────────────────────────────
-const isOnline = (t) => t && Date.now() - new Date(t).getTime() < ONLINE_THRESHOLD_MS;
+const isOnline = (t) =>
+  t && Date.now() - new Date(t).getTime() < ONLINE_THRESHOLD_MS;
 const fileIcon = (name = "") => {
   const ext = name.split(".").pop().toLowerCase();
   if (ext === "pdf") return { icon: "📄", cls: "fi-pdf" };
-  if (["png","jpg","jpeg","gif","webp"].includes(ext)) return { icon: "🖼️", cls: "fi-img" };
-  if (["zip","rar","7z"].includes(ext)) return { icon: "🗜️", cls: "fi-zip" };
-  if (["doc","docx"].includes(ext)) return { icon: "📝", cls: "fi-doc" };
-  if (["xls","xlsx","csv"].includes(ext)) return { icon: "📊", cls: "fi-xls" };
+  if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext))
+    return { icon: "🖼️", cls: "fi-img" };
+  if (["zip", "rar", "7z"].includes(ext)) return { icon: "🗜️", cls: "fi-zip" };
+  if (["doc", "docx"].includes(ext)) return { icon: "📝", cls: "fi-doc" };
+  if (["xls", "xlsx", "csv"].includes(ext))
+    return { icon: "📊", cls: "fi-xls" };
   return { icon: "📎", cls: "fi-other" };
 };
-const fmtSize = (b) => !b ? "" : b < 1024 ? `${b} B` : b < 1048576 ? `${(b/1024).toFixed(1)} KB` : `${(b/1048576).toFixed(1)} MB`;
-const fmtTime = (s) => new Date(s).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+const fmtSize = (b) =>
+  !b
+    ? ""
+    : b < 1024
+      ? `${b} B`
+      : b < 1048576
+        ? `${(b / 1024).toFixed(1)} KB`
+        : `${(b / 1048576).toFixed(1)} MB`;
+const fmtTime = (s) =>
+  new Date(s).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 const fmtDate = (s) => {
-  const d = new Date(s), today = new Date();
-  const yest = new Date(today); yest.setDate(today.getDate() - 1);
+  const d = new Date(s),
+    today = new Date();
+  const yest = new Date(today);
+  yest.setDate(today.getDate() - 1);
   if (d.toDateString() === today.toDateString()) return "Today";
-  if (d.toDateString() === yest.toDateString())  return "Yesterday";
-  return d.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+  if (d.toDateString() === yest.toDateString()) return "Yesterday";
+  return d.toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 };
-const initials = (n) => (n || "?").trim().split(/\s+/).map(w => w[0]).join("").slice(0, 2).toUpperCase() || "?";
+const initials = (n) =>
+  (n || "?")
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "?";
 
 // ─── ParticipantRow ──────────────────────────────────────
 function ParticipantRow({ p, currentUser }) {
   const isInstructor = p.role === "admin" || p.role === "instructor";
-  const online       = isOnline(p.lastActive);
-  const isSelf       = currentUser?._id && p._id?.toString() === currentUser._id.toString();
-  const avatarUrl    = typeof p.avatar === "string" ? p.avatar : p.avatar?.url || null;
+  const online = isOnline(p.lastActive);
+  const isSelf =
+    currentUser?._id && p._id?.toString() === currentUser._id.toString();
+  const avatarUrl =
+    typeof p.avatar === "string" ? p.avatar : p.avatar?.url || null;
   return (
     <div className={`lc-p-row${isSelf ? " is-self" : ""}`}>
       <div className={`lc-p-avatar ${isInstructor ? "instructor" : "student"}`}>
-        {avatarUrl
-          ? <img src={avatarUrl} alt={p.name} onError={(e) => { e.currentTarget.style.display = "none"; }} />
-          : initials(p.name)}
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt={p.name}
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        ) : (
+          initials(p.name)
+        )}
         <div className={`lc-p-status-dot ${online ? "on" : "off"}`} />
       </div>
       <div className="lc-p-info">
@@ -382,9 +562,13 @@ function ParticipantRow({ p, currentUser }) {
           {isSelf ? "You" : p.name}
         </div>
         <div className={`lc-p-role${isInstructor ? " instructor" : ""}`}>
-          {isInstructor ? "Instructor" : online
-            ? <span className="lc-p-online-status">Online</span>
-            : "Offline"}
+          {isInstructor ? (
+            "Instructor"
+          ) : online ? (
+            <span className="lc-p-online-status">Online</span>
+          ) : (
+            "Offline"
+          )}
         </div>
       </div>
       {isSelf && <span className="lc-p-you-pill">You</span>}
@@ -393,17 +577,30 @@ function ParticipantRow({ p, currentUser }) {
 }
 
 // ─── ParticipantsPanel ───────────────────────────────────
-function ParticipantsPanel({ participants, enrolledCount, visible, currentUser }) {
-  const instructors = participants.filter(p => p.role === "admin" || p.role === "instructor");
-  const students    = participants.filter(p => p.role !== "admin" && p.role !== "instructor");
+function ParticipantsPanel({
+  participants,
+  enrolledCount,
+  visible,
+  currentUser,
+}) {
+  const instructors = participants.filter(
+    (p) => p.role === "admin" || p.role === "instructor",
+  );
+  const students = participants.filter(
+    (p) => p.role !== "admin" && p.role !== "instructor",
+  );
   const sortSelfFirst = (a, b) => {
-    const as = currentUser?._id && a._id?.toString() === currentUser._id.toString();
-    const bs = currentUser?._id && b._id?.toString() === currentUser._id.toString();
-    if (as) return -1; if (bs) return 1;
-    const ao = isOnline(a.lastActive), bo = isOnline(b.lastActive);
+    const as =
+      currentUser?._id && a._id?.toString() === currentUser._id.toString();
+    const bs =
+      currentUser?._id && b._id?.toString() === currentUser._id.toString();
+    if (as) return -1;
+    if (bs) return 1;
+    const ao = isOnline(a.lastActive),
+      bo = isOnline(b.lastActive);
     return ao === bo ? 0 : ao ? -1 : 1;
   };
-  const onlineCount = participants.filter(p => isOnline(p.lastActive)).length;
+  const onlineCount = participants.filter((p) => isOnline(p.lastActive)).length;
   return (
     <div className={`lc-participants${!visible ? " hidden" : ""}`}>
       <div className="lc-p-head">
@@ -416,21 +613,44 @@ function ParticipantsPanel({ participants, enrolledCount, visible, currentUser }
           </div>
         </div>
         <div className="lc-online-row">
-          <div className="lc-online-pill on"><div className="lc-status-dot on" />{onlineCount} online</div>
-          <div className="lc-online-pill off"><div className="lc-status-dot off" />{participants.length - onlineCount} offline</div>
+          <div className="lc-online-pill on">
+            <div className="lc-status-dot on" />
+            {onlineCount} online
+          </div>
+          <div className="lc-online-pill off">
+            <div className="lc-status-dot off" />
+            {participants.length - onlineCount} offline
+          </div>
         </div>
       </div>
       <div className="lc-p-list">
-        {instructors.length > 0 && (<>
-          <div className="lc-p-section-label">Instructors</div>
-          {[...instructors].sort(sortSelfFirst).map(p => <ParticipantRow key={p._id} p={p} currentUser={currentUser} />)}
-        </>)}
-        {students.length > 0 && (<>
-          <div className="lc-p-section-label" style={{ marginTop: 6 }}>Students</div>
-          {[...students].sort(sortSelfFirst).map(p => <ParticipantRow key={p._id} p={p} currentUser={currentUser} />)}
-        </>)}
+        {instructors.length > 0 && (
+          <>
+            <div className="lc-p-section-label">Instructors</div>
+            {[...instructors].sort(sortSelfFirst).map((p) => (
+              <ParticipantRow key={p._id} p={p} currentUser={currentUser} />
+            ))}
+          </>
+        )}
+        {students.length > 0 && (
+          <>
+            <div className="lc-p-section-label" style={{ marginTop: 6 }}>
+              Students
+            </div>
+            {[...students].sort(sortSelfFirst).map((p) => (
+              <ParticipantRow key={p._id} p={p} currentUser={currentUser} />
+            ))}
+          </>
+        )}
         {participants.length === 0 && (
-          <div style={{ padding: "24px 8px", textAlign: "center", fontSize: 12, color: "var(--c-ink4)" }}>
+          <div
+            style={{
+              padding: "24px 8px",
+              textAlign: "center",
+              fontSize: 12,
+              color: "var(--c-ink4)",
+            }}
+          >
             No participants yet
           </div>
         )}
@@ -443,59 +663,833 @@ function ParticipantsPanel({ participants, enrolledCount, visible, currentUser }
 export default function LessonChat({ courseId, lessonId, currentUser }) {
   const messagesEndRef = useRef(null);
   const messagesBoxRef = useRef(null);
-  const textareaRef    = useRef(null);
-  const fileInputRef   = useRef(null);
-  const initialDone    = useRef(false);
-  const prevCount      = useRef(0);
+  const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const initialDone = useRef(false);
+  const prevCount = useRef(0);
 
-  const [messages,      setMessages]      = useState([]);
-  const [loading,       setLoading]       = useState(true);
-  const [sending,       setSending]       = useState(false);
-  const [error,         setError]         = useState("");
-  const [text,          setText]          = useState("");
-  const [files,         setFiles]         = useState([]);
-  const [replyTo,       setReplyTo]       = useState(null);
-  const [tab,           setTab]           = useState("all");
-  const [atBottom,      setAtBottom]      = useState(true);
-  const [newCount,      setNewCount]      = useState(0);
-  const [participants,  setParticipants]  = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const [text, setText] = useState("");
+  const [files, setFiles] = useState([]);
+  const [replyTo, setReplyTo] = useState(null);
+  const [tab, setTab] = useState("all");
+  const [atBottom, setAtBottom] = useState(true);
+  const [newCount, setNewCount] = useState(0);
+  const [participants, setParticipants] = useState([]);
   const [enrolledCount, setEnrolledCount] = useState(0);
-  const [panelOpen,     setPanelOpen]     = useState(true);
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [emojiCat, setEmojiCat] = useState(0);
+  const emojiPickerRef = useRef(null);
+  const [emojiSearch, setEmojiSearch] = useState("");
+  const [hoveredEmoji, setHoveredEmoji] = useState(null);
+  const EMOJI_CATS = [
+    {
+      label: "😊",
+      emojis: [
+        "😀",
+        "😃",
+        "😄",
+        "😁",
+        "😆",
+        "😅",
+        "😂",
+        "🤣",
+        "😊",
+        "😇",
+        "🙂",
+        "🙃",
+        "😉",
+        "😌",
+        "😍",
+        "🥰",
+        "😘",
+        "😗",
+        "😙",
+        "😚",
+        "😋",
+        "😛",
+        "😝",
+        "😜",
+        "🤪",
+        "🤨",
+        "🧐",
+        "🤓",
+        "😎",
+        "🥸",
+        "🤩",
+        "🥳",
+        "😏",
+        "😒",
+        "😞",
+        "😔",
+        "😟",
+        "😕",
+        "🙁",
+        "☹️",
+        "😣",
+        "😖",
+        "😫",
+        "😩",
+        "🥺",
+        "😢",
+        "😭",
+        "😤",
+        "😠",
+        "😡",
+        "🤬",
+        "🤯",
+        "😳",
+        "🥵",
+        "🥶",
+        "😱",
+        "😨",
+        "😰",
+        "😥",
+        "😓",
+        "🤗",
+        "🤔",
+        "🤭",
+        "🤫",
+        "🤥",
+        "😶",
+        "😐",
+        "😑",
+        "😬",
+        "🙄",
+        "😯",
+        "😦",
+        "😧",
+        "😮",
+        "😲",
+        "🥱",
+        "😴",
+        "🤤",
+        "😪",
+        "😵",
+        "🤐",
+        "🥴",
+        "🤢",
+        "🤮",
+        "🤧",
+        "😷",
+        "🤒",
+        "🤕",
+      ],
+    },
+    {
+      label: "👋",
+      emojis: [
+        "👋",
+        "🤚",
+        "🖐",
+        "✋",
+        "🖖",
+        "👌",
+        "🤌",
+        "🤏",
+        "✌️",
+        "🤞",
+        "🤟",
+        "🤘",
+        "🤙",
+        "👈",
+        "👉",
+        "👆",
+        "🖕",
+        "👇",
+        "☝️",
+        "👍",
+        "👎",
+        "✊",
+        "👊",
+        "🤛",
+        "🤜",
+        "👏",
+        "🙌",
+        "👐",
+        "🤲",
+        "🤝",
+        "🙏",
+        "✍️",
+        "💅",
+        "🤳",
+        "💪",
+        "🦾",
+        "🦵",
+        "🦶",
+        "👂",
+        "🦻",
+        "👃",
+        "🫀",
+        "🫁",
+        "🧠",
+        "🦷",
+        "🦴",
+        "👀",
+        "👁",
+        "👅",
+        "👄",
+        "💋",
+        "🫦",
+      ],
+    },
+    {
+      label: "🐶",
+      emojis: [
+        "🐶",
+        "🐱",
+        "🐭",
+        "🐹",
+        "🐰",
+        "🦊",
+        "🐻",
+        "🐼",
+        "🐨",
+        "🐯",
+        "🦁",
+        "🐮",
+        "🐷",
+        "🐸",
+        "🐵",
+        "🙈",
+        "🙉",
+        "🙊",
+        "🐔",
+        "🐧",
+        "🐦",
+        "🐤",
+        "🦆",
+        "🦅",
+        "🦉",
+        "🦇",
+        "🐺",
+        "🐗",
+        "🐴",
+        "🦄",
+        "🐝",
+        "🐛",
+        "🦋",
+        "🐌",
+        "🐞",
+        "🐜",
+        "🦟",
+        "🦗",
+        "🕷",
+        "🦂",
+        "🐢",
+        "🐍",
+        "🦎",
+        "🦖",
+        "🦕",
+        "🐙",
+        "🦑",
+        "🦐",
+        "🦞",
+        "🦀",
+        "🐡",
+        "🐠",
+        "🐟",
+        "🐬",
+        "🐳",
+        "🐋",
+        "🦈",
+        "🐊",
+        "🐅",
+        "🐆",
+        "🦓",
+        "🦍",
+        "🦧",
+        "🦣",
+        "🐘",
+        "🦛",
+        "🦏",
+        "🐪",
+        "🐫",
+        "🦒",
+        "🦘",
+        "🦬",
+        "🐃",
+        "🐂",
+        "🐄",
+        "🐎",
+        "🐖",
+        "🐏",
+        "🐑",
+        "🦙",
+        "🐐",
+        "🦌",
+        "🐕",
+        "🐩",
+        "🦮",
+        "🐈",
+        "🐓",
+        "🦃",
+        "🦤",
+        "🦚",
+        "🦜",
+        "🦢",
+        "🦩",
+        "🕊",
+        "🐇",
+        "🦝",
+        "🦨",
+        "🦡",
+        "🦫",
+        "🦦",
+        "🦥",
+        "🐁",
+        "🐀",
+        "🐿",
+        "🦔",
+      ],
+    },
+    {
+      label: "🍎",
+      emojis: [
+        "🍎",
+        "🍐",
+        "🍊",
+        "🍋",
+        "🍌",
+        "🍉",
+        "🍇",
+        "🍓",
+        "🫐",
+        "🍈",
+        "🍒",
+        "🍑",
+        "🥭",
+        "🍍",
+        "🥥",
+        "🥝",
+        "🍅",
+        "🍆",
+        "🥑",
+        "🥦",
+        "🥬",
+        "🥒",
+        "🌶",
+        "🫑",
+        "🧄",
+        "🧅",
+        "🥔",
+        "🍠",
+        "🥐",
+        "🥯",
+        "🍞",
+        "🥖",
+        "🥨",
+        "🧀",
+        "🥚",
+        "🍳",
+        "🧈",
+        "🥞",
+        "🧇",
+        "🥓",
+        "🥩",
+        "🍗",
+        "🍖",
+        "🦴",
+        "🌭",
+        "🍔",
+        "🍟",
+        "🍕",
+        "🫓",
+        "🥪",
+        "🥙",
+        "🧆",
+        "🌮",
+        "🌯",
+        "🫔",
+        "🥗",
+        "🥘",
+        "🫕",
+        "🍝",
+        "🍜",
+        "🍲",
+        "🍛",
+        "🍣",
+        "🍱",
+        "🥟",
+        "🦪",
+        "🍤",
+        "🍙",
+        "🍚",
+        "🍘",
+        "🍥",
+        "🥮",
+        "🍢",
+        "🧁",
+        "🍰",
+        "🎂",
+        "🍮",
+        "🍭",
+        "🍬",
+        "🍫",
+        "🍿",
+        "🍩",
+        "🍪",
+        "🌰",
+        "🥜",
+        "🍯",
+        "🧃",
+        "🥤",
+        "🧋",
+        "☕",
+        "🍵",
+        "🫖",
+        "🍺",
+        "🍻",
+        "🥂",
+        "🍷",
+        "🫗",
+        "🥃",
+        "🍸",
+        "🍹",
+        "🧉",
+        "🍾",
+      ],
+    },
+    {
+      label: "⚽",
+      emojis: [
+        "⚽",
+        "🏀",
+        "🏈",
+        "⚾",
+        "🥎",
+        "🎾",
+        "🏐",
+        "🏉",
+        "🥏",
+        "🎱",
+        "🪀",
+        "🏓",
+        "🏸",
+        "🏒",
+        "🏑",
+        "🥍",
+        "🏏",
+        "🪃",
+        "🥅",
+        "⛳",
+        "🪁",
+        "🏹",
+        "🎣",
+        "🤿",
+        "🥊",
+        "🥋",
+        "🎽",
+        "🛹",
+        "🛼",
+        "🛷",
+        "⛸",
+        "🥌",
+        "🎿",
+        "⛷",
+        "🏂",
+        "🪂",
+        "🏋️",
+        "🤼",
+        "🤸",
+        "⛹️",
+        "🤺",
+        "🏇",
+        "🧘",
+        "🏄",
+        "🏊",
+        "🤽",
+        "🚣",
+        "🧗",
+        "🚵",
+        "🚴",
+        "🏆",
+        "🥇",
+        "🥈",
+        "🥉",
+        "🏅",
+        "🎖",
+        "🏵",
+        "🎗",
+        "🎫",
+        "🎟",
+        "🎪",
+        "🤹",
+        "🎭",
+        "🩰",
+        "🎨",
+        "🎬",
+        "🎤",
+        "🎧",
+        "🎼",
+        "🎵",
+        "🎶",
+        "🎹",
+        "🥁",
+        "🪘",
+        "🎷",
+        "🎺",
+        "🪗",
+        "🎸",
+        "🪕",
+        "🎻",
+        "🎲",
+        "♟",
+        "🎯",
+        "🎳",
+        "🎮",
+        "🎰",
+        "🧩",
+      ],
+    },
+    {
+      label: "🌍",
+      emojis: [
+        "🌍",
+        "🌎",
+        "🌏",
+        "🌐",
+        "🗺",
+        "🧭",
+        "🏔",
+        "⛰",
+        "🌋",
+        "🗻",
+        "🏕",
+        "🏖",
+        "🏜",
+        "🏝",
+        "🏞",
+        "🏟",
+        "🏛",
+        "🏗",
+        "🏘",
+        "🏚",
+        "🏠",
+        "🏡",
+        "🏢",
+        "🏣",
+        "🏤",
+        "🏥",
+        "🏦",
+        "🏨",
+        "🏩",
+        "🏪",
+        "🏫",
+        "🏬",
+        "🏭",
+        "🏯",
+        "🏰",
+        "💒",
+        "🗼",
+        "🗽",
+        "⛪",
+        "🕌",
+        "🛕",
+        "🕍",
+        "⛩",
+        "🕋",
+        "⛲",
+        "⛺",
+        "🌁",
+        "🌃",
+        "🏙",
+        "🌄",
+        "🌅",
+        "🌆",
+        "🌇",
+        "🌉",
+        "♨️",
+        "🎠",
+        "🎡",
+        "🎢",
+        "💈",
+        "🎪",
+        "🚂",
+        "🚃",
+        "🚄",
+        "🚅",
+        "🚆",
+        "🚇",
+        "🚈",
+        "🚉",
+        "🚊",
+        "🚝",
+        "🚞",
+        "🚋",
+        "🚌",
+        "🚍",
+        "🚎",
+        "🚐",
+        "🚑",
+        "🚒",
+        "🚓",
+        "🚔",
+        "🚕",
+        "🚖",
+        "🚗",
+        "🚘",
+        "🚙",
+        "🛻",
+        "🚚",
+        "🚛",
+        "🚜",
+        "🏎",
+        "🏍",
+        "🛵",
+        "🦽",
+        "🦼",
+        "🛺",
+        "🚲",
+        "🛴",
+        "🛹",
+        "🛼",
+        "🚏",
+        "🛣",
+        "🛤",
+        "⛽",
+        "🚨",
+        "🚥",
+        "🚦",
+        "✈️",
+        "🛫",
+        "🛬",
+        "🛩",
+        "💺",
+        "🛸",
+        "🚁",
+        "🛶",
+        "⛵",
+        "🚤",
+        "🛥",
+        "🛳",
+        "⛴",
+        "🚢",
+        "⚓",
+        "🪝",
+        "⛽",
+        "🗺",
+      ],
+    },
+    {
+      label: "❤️",
+      emojis: [
+        "❤️",
+        "🧡",
+        "💛",
+        "💚",
+        "💙",
+        "💜",
+        "🖤",
+        "🤍",
+        "🤎",
+        "💔",
+        "❣️",
+        "💕",
+        "💞",
+        "💓",
+        "💗",
+        "💖",
+        "💘",
+        "💝",
+        "💟",
+        "☮️",
+        "✝️",
+        "☪️",
+        "🕉",
+        "☸️",
+        "✡️",
+        "🔯",
+        "🕎",
+        "☯️",
+        "☦️",
+        "🛐",
+        "⛎",
+        "♈",
+        "♉",
+        "♊",
+        "♋",
+        "♌",
+        "♍",
+        "♎",
+        "♏",
+        "♐",
+        "♑",
+        "♒",
+        "♓",
+        "🆔",
+        "⚛️",
+        "🉑",
+        "☢️",
+        "☣️",
+        "📴",
+        "📳",
+        "🈶",
+        "🈚",
+        "🈸",
+        "🈺",
+        "🈷️",
+        "✴️",
+        "🆚",
+        "💮",
+        "🉐",
+        "㊙️",
+        "㊗️",
+        "🈴",
+        "🈵",
+        "🈹",
+        "🈲",
+        "🅰️",
+        "🅱️",
+        "🆎",
+        "🆑",
+        "🅾️",
+        "🆘",
+        "❌",
+        "⭕",
+        "🛑",
+        "⛔",
+        "📛",
+        "🚫",
+        "💯",
+        "💢",
+        "♨️",
+        "🚷",
+        "🚯",
+        "🚳",
+        "🚱",
+        "🔞",
+        "📵",
+        "🔕",
+        "🔇",
+        "🔈",
+        "🔉",
+        "🔊",
+        "📢",
+        "📣",
+        "📯",
+        "🔔",
+        "🔕",
+        "🎵",
+        "🎶",
+        "💹",
+        "🛗",
+        "🏧",
+        "💱",
+        "💲",
+        "⚕️",
+        "♻️",
+        "⚜️",
+        "🔱",
+        "📛",
+        "🔰",
+        "⭕",
+        "✅",
+        "☑️",
+        "✔️",
+        "❎",
+        "🔲",
+        "🔳",
+        "▪️",
+        "▫️",
+        "◾",
+        "◽",
+        "◼️",
+        "◻️",
+        "🟥",
+        "🟧",
+        "🟨",
+        "🟩",
+        "🟦",
+        "🟪",
+        "⬛",
+        "⬜",
+        "🟫",
+      ],
+    },
+  ];
 
-  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "instructor";
+  useEffect(() => {
+    if (!showEmoji) return;
+    const handler = (e) => {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(e.target)
+      ) {
+        setShowEmoji(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showEmoji]);
+
+  const insertEmoji = (emoji) => {
+    const el = textareaRef.current;
+    if (!el) {
+      setText((t) => t + emoji);
+      return;
+    }
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const newVal = text.slice(0, start) + emoji + text.slice(end);
+    setText(newVal);
+    // Restore cursor after emoji
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + emoji.length, start + emoji.length);
+    });
+  };
+  const isAdmin =
+    currentUser?.role === "admin" || currentUser?.role === "instructor";
 
   const fetchParticipants = useCallback(async () => {
     try {
-      const r = await api.get(`/courses/${courseId}/lessons/${lessonId}/chat/participants`);
+      const r = await api.get(
+        `/courses/${courseId}/lessons/${lessonId}/chat/participants`,
+      );
       const d = r.data.data || r.data;
       setParticipants(d.participants || []);
       setEnrolledCount(d.enrolledCount ?? d.participants?.length ?? 0);
     } catch (err) {
       if (err.response?.status === 429) {
-        console.warn("[LessonChat] participants rate-limited, will retry next interval");
+        console.warn(
+          "[LessonChat] participants rate-limited, will retry next interval",
+        );
       }
     }
   }, [courseId, lessonId]);
 
-  const fetchMessages = useCallback(async (silent = false) => {
-    try {
-      const r = await api.get(`/courses/${courseId}/lessons/${lessonId}/chat`);
-      const incoming = r.data.data?.messages || r.data.messages || [];
-      setMessages(prev => {
-        if (initialDone.current && !atBottom && incoming.length > prev.length)
-          setNewCount(n => n + (incoming.length - prev.length));
-        return incoming;
-      });
-    } catch (err) {
-      if (err.response?.status === 429) {
-        console.warn("[LessonChat] messages rate-limited, will retry next interval");
-        return;
+  const fetchMessages = useCallback(
+    async (silent = false) => {
+      try {
+        const r = await api.get(
+          `/courses/${courseId}/lessons/${lessonId}/chat`,
+        );
+        const incoming = r.data.data?.messages || r.data.messages || [];
+        setMessages((prev) => {
+          if (initialDone.current && !atBottom && incoming.length > prev.length)
+            setNewCount((n) => n + (incoming.length - prev.length));
+          return incoming;
+        });
+      } catch (err) {
+        if (err.response?.status === 429) {
+          console.warn(
+            "[LessonChat] messages rate-limited, will retry next interval",
+          );
+          return;
+        }
+        if (!silent)
+          setError(err.response?.data?.message || "Failed to load messages");
+      } finally {
+        setLoading(false);
       }
-      if (!silent) setError(err.response?.data?.message || "Failed to load messages");
-    } finally {
-      setLoading(false);
-    }
-  }, [courseId, lessonId, atBottom]);
+    },
+    [courseId, lessonId, atBottom],
+  );
 
   const sendHeartbeat = useCallback(async () => {
     try {
@@ -505,19 +1499,31 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
 
   useEffect(() => {
     initialDone.current = false;
-    prevCount.current   = 0;
-    fetchMessages().then(() => { initialDone.current = true; });
+    prevCount.current = 0;
+    fetchMessages().then(() => {
+      initialDone.current = true;
+    });
     fetchParticipants();
     sendHeartbeat();
-    const msgTimer       = setInterval(() => fetchMessages(true),  POLL_MESSAGES_MS);
-    const partTimer      = setInterval(() => fetchParticipants(),  POLL_PARTICIPANTS_MS);
-    const heartbeatTimer = setInterval(() => sendHeartbeat(),      HEARTBEAT_MS);
-    return () => { clearInterval(msgTimer); clearInterval(partTimer); clearInterval(heartbeatTimer); };
+    const msgTimer = setInterval(() => fetchMessages(true), POLL_MESSAGES_MS);
+    const partTimer = setInterval(
+      () => fetchParticipants(),
+      POLL_PARTICIPANTS_MS,
+    );
+    const heartbeatTimer = setInterval(() => sendHeartbeat(), HEARTBEAT_MS);
+    return () => {
+      clearInterval(msgTimer);
+      clearInterval(partTimer);
+      clearInterval(heartbeatTimer);
+    };
   }, [fetchMessages, fetchParticipants, sendHeartbeat]);
 
   useEffect(() => {
     const cur = messages.length;
-    if (!initialDone.current) { prevCount.current = cur; return; }
+    if (!initialDone.current) {
+      prevCount.current = cur;
+      return;
+    }
     if (cur > prevCount.current && atBottom) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       setNewCount(0);
@@ -526,7 +1532,8 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
   }, [messages, atBottom]);
 
   const handleScroll = () => {
-    const el = messagesBoxRef.current; if (!el) return;
+    const el = messagesBoxRef.current;
+    if (!el) return;
     const bottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
     setAtBottom(bottom);
     if (bottom) setNewCount(0);
@@ -534,7 +1541,8 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    setAtBottom(true); setNewCount(0);
+    setAtBottom(true);
+    setNewCount(0);
   };
 
   // ── Send ─────────────────────────────────────────────────────────────────────
@@ -558,19 +1566,23 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
       const form = new FormData();
       form.append("content", trimmed);
       if (replyTo) form.append("replyToId", replyTo._id);
-      files.forEach(f => form.append("files", f));
+      files.forEach((f) => form.append("files", f));
 
       // ── Log every FormData entry so we can verify files are attached ──
       console.log("[handleSend] FormData entries:");
       for (const [key, val] of form.entries()) {
         if (val instanceof File) {
-          console.log(`[handleSend]   ${key} → File( name=${val.name}, type=${val.type}, size=${val.size} )`);
+          console.log(
+            `[handleSend]   ${key} → File( name=${val.name}, type=${val.type}, size=${val.size} )`,
+          );
         } else {
           console.log(`[handleSend]   ${key} → "${val}"`);
         }
       }
 
-      console.log("[handleSend] Sending POST with Content-Type: undefined (multipart boundary set by browser)");
+      console.log(
+        "[handleSend] Sending POST with Content-Type: undefined (multipart boundary set by browser)",
+      );
 
       const response = await api.post(
         `/courses/${courseId}/lessons/${lessonId}/chat`,
@@ -582,7 +1594,7 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
           // 'multipart/form-data; boundary=...' header automatically.
           // Without this, multer on the server never sees the files.
           headers: { "Content-Type": undefined },
-        }
+        },
       );
 
       console.log("[handleSend] ✓ POST success, status:", response.status);
@@ -594,7 +1606,6 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
       if (textareaRef.current) textareaRef.current.style.height = "auto";
       await fetchMessages(true);
       scrollToBottom();
-
     } catch (err) {
       console.error("[handleSend] ✗ POST failed");
       console.error("[handleSend] status  :", err.response?.status);
@@ -612,7 +1623,10 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   const handleTextChange = (e) => {
@@ -624,34 +1638,48 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
 
   const handleFileChange = (e) => {
     const chosen = Array.from(e.target.files || []);
-    console.log("[handleFileChange] files chosen:", chosen.map(f => `${f.name} (${f.type}, ${f.size}b)`));
-    setFiles(prev => [...prev, ...chosen].slice(0, 5));
+    console.log(
+      "[handleFileChange] files chosen:",
+      chosen.map((f) => `${f.name} (${f.type}, ${f.size}b)`),
+    );
+    setFiles((prev) => [...prev, ...chosen].slice(0, 5));
     e.target.value = "";
   };
 
   const removeFile = (i) => {
     console.log("[removeFile] removing file at index:", i);
-    setFiles(f => f.filter((_, idx) => idx !== i));
+    setFiles((f) => f.filter((_, idx) => idx !== i));
   };
 
   const handleDownload = async (msgId, fi, fileName) => {
-    console.log("[handleDownload] msgId:", msgId, "| fileIndex:", fi, "| fileName:", fileName);
+    console.log(
+      "[handleDownload] msgId:",
+      msgId,
+      "| fileIndex:",
+      fi,
+      "| fileName:",
+      fileName,
+    );
     try {
       const res = await api.get(
         `/courses/${courseId}/lessons/${lessonId}/chat/download/${msgId}/${fi}`,
-        { responseType: "blob" }
+        { responseType: "blob" },
       );
       console.log("[handleDownload] ✓ blob received, size:", res.data?.size);
       const url = window.URL.createObjectURL(new Blob([res.data]));
-      const a   = document.createElement("a");
-      a.href    = url;
+      const a = document.createElement("a");
+      a.href = url;
       a.setAttribute("download", fileName);
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("[handleDownload] ✗ failed:", err.response?.status, err.message);
+      console.error(
+        "[handleDownload] ✗ failed:",
+        err.response?.status,
+        err.message,
+      );
       setError("Failed to download file.");
     }
   };
@@ -659,7 +1687,9 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
   const handleResolve = async (msgId) => {
     console.log("[handleResolve] msgId:", msgId);
     try {
-      await api.patch(`/courses/${courseId}/lessons/${lessonId}/chat/${msgId}/resolve`);
+      await api.patch(
+        `/courses/${courseId}/lessons/${lessonId}/chat/${msgId}/resolve`,
+      );
       await fetchMessages(true);
     } catch (err) {
       console.error("[handleResolve] failed:", err.response?.data);
@@ -667,19 +1697,23 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
   };
 
   // ── Build grouped message structure ──────────────────
-  const visible = messages.filter(m => {
+  const visible = messages.filter((m) => {
     if (tab === "resources") return m.files?.length > 0;
-    if (tab === "mine")      return m.sender?._id?.toString() === currentUser?._id?.toString();
+    if (tab === "mine")
+      return m.sender?._id?.toString() === currentUser?._id?.toString();
     return true;
   });
 
   const groups = [];
   visible.forEach((msg, i) => {
-    const prev      = visible[i - 1];
-    const newDate   = !prev || fmtDate(prev.createdAt) !== fmtDate(msg.createdAt);
-    const newSender = !prev || prev.sender?._id !== msg.sender?._id ||
-                      new Date(msg.createdAt) - new Date(prev.createdAt) > 5 * 60000;
-    if (newDate) groups.push({ type: "divider", label: fmtDate(msg.createdAt) });
+    const prev = visible[i - 1];
+    const newDate = !prev || fmtDate(prev.createdAt) !== fmtDate(msg.createdAt);
+    const newSender =
+      !prev ||
+      prev.sender?._id !== msg.sender?._id ||
+      new Date(msg.createdAt) - new Date(prev.createdAt) > 5 * 60000;
+    if (newDate)
+      groups.push({ type: "divider", label: fmtDate(msg.createdAt) });
     if (newSender) {
       groups.push({ type: "group", sender: msg.sender, msgs: [msg] });
     } else {
@@ -688,46 +1722,94 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
   });
 
   const renderGroup = (g) => {
-    const isSelf       = currentUser?._id && g.sender?._id?.toString() === currentUser._id.toString();
-    const isInstructor = g.sender?.role === "admin" || g.sender?.role === "instructor";
-    const avatarUrl    = typeof g.sender?.avatar === "string" ? g.sender.avatar : g.sender?.avatar?.url || null;
-    const avCls        = isSelf ? "av-own" : isInstructor ? "av-instructor" : "av-student";
-    const nameCls      = isSelf ? "own" : isInstructor ? "instructor" : "student";
-    const bubbleCls    = isSelf ? "bbl-own" : isInstructor ? "bbl-instructor" : "bbl-student";
+    const isSelf =
+      currentUser?._id &&
+      g.sender?._id?.toString() === currentUser._id.toString();
+    const isInstructor =
+      g.sender?.role === "admin" || g.sender?.role === "instructor";
+    const avatarUrl =
+      typeof g.sender?.avatar === "string"
+        ? g.sender.avatar
+        : g.sender?.avatar?.url || null;
+    const avCls = isSelf
+      ? "av-own"
+      : isInstructor
+        ? "av-instructor"
+        : "av-student";
+    const nameCls = isSelf ? "own" : isInstructor ? "instructor" : "student";
+    const bubbleCls = isSelf
+      ? "bbl-own"
+      : isInstructor
+        ? "bbl-instructor"
+        : "bbl-student";
 
     return (
-      <div key={g.msgs[0]._id} className={`lc-msg-group${isSelf ? " own" : ""}`}>
+      <div
+        key={g.msgs[0]._id}
+        className={`lc-msg-group${isSelf ? " own" : ""}`}
+      >
         <div className="lc-msg-header">
           <div className={`lc-avatar ${avCls}`}>
-            {avatarUrl
-              ? <img src={avatarUrl} alt={g.sender?.name}
-                  onError={e => { e.currentTarget.style.display = "none"; e.currentTarget.parentNode.textContent = initials(g.sender?.name); }} />
-              : initials(g.sender?.name)}
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={g.sender?.name}
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                  e.currentTarget.parentNode.textContent = initials(
+                    g.sender?.name,
+                  );
+                }}
+              />
+            ) : (
+              initials(g.sender?.name)
+            )}
           </div>
-          {isSelf
-            ? <span className="lc-you-tag">You</span>
-            : <span className={`lc-sender-name ${nameCls}`}>{g.sender?.name}</span>}
+          {isSelf ? (
+            <span className="lc-you-tag">You</span>
+          ) : (
+            <span className={`lc-sender-name ${nameCls}`}>
+              {g.sender?.name}
+            </span>
+          )}
           {isInstructor && <span className="lc-role-tag">Instructor</span>}
           <span className="lc-msg-time">{fmtTime(g.msgs[0].createdAt)}</span>
         </div>
 
         {g.msgs.map((msg) => (
-          <div key={msg._id} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <div
+            key={msg._id}
+            style={{ display: "flex", flexDirection: "column", gap: 2 }}
+          >
             <div className="lc-bubble-row">
               <div className="lc-avatar-spacer" />
               <div className={`lc-bubble ${bubbleCls}`}>
                 {msg.replyTo && (
                   <div className="lc-reply-quote">
-                    <span className="lc-reply-quote-sender">{msg.replyTo.sender?.name}</span>
-                    <span className="lc-reply-quote-text">{msg.replyTo.content?.slice(0, 60) || "Attachment"}</span>
+                    <span className="lc-reply-quote-sender">
+                      {msg.replyTo.sender?.name}
+                    </span>
+                    <span className="lc-reply-quote-text">
+                      {msg.replyTo.content?.slice(0, 60) || "Attachment"}
+                    </span>
                   </div>
                 )}
-                {msg.content && <span style={{ whiteSpace: "pre-wrap" }}>{msg.content}</span>}
-                {msg.resolved && <span className="lc-resolved-tag" style={{ marginLeft: 8 }}>✓ Resolved</span>}
+                {msg.content && (
+                  <span style={{ whiteSpace: "pre-wrap" }}>{msg.content}</span>
+                )}
+                {msg.resolved && (
+                  <span className="lc-resolved-tag" style={{ marginLeft: 8 }}>
+                    ✓ Resolved
+                  </span>
+                )}
                 {msg.files?.map((f, fi) => {
                   const { icon, cls } = fileIcon(f.name);
                   return (
-                    <div key={fi} className="lc-file-card" onClick={() => handleDownload(msg._id, fi, f.name)}>
+                    <div
+                      key={fi}
+                      className="lc-file-card"
+                      onClick={() => handleDownload(msg._id, fi, f.name)}
+                    >
                       <div className={`lc-file-icon-wrap ${cls}`}>{icon}</div>
                       <div className="lc-file-meta">
                         <span className="lc-file-name">{f.name}</span>
@@ -740,9 +1822,19 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
               </div>
             </div>
             <div className="lc-msg-actions">
-              <button className="lc-msg-action-btn" onClick={() => setReplyTo(msg)}>↩ Reply</button>
+              <button
+                className="lc-msg-action-btn"
+                onClick={() => setReplyTo(msg)}
+              >
+                ↩ Reply
+              </button>
               {isAdmin && !msg.resolved && (
-                <button className="lc-msg-action-btn resolve" onClick={() => handleResolve(msg._id)}>✓ Resolve</button>
+                <button
+                  className="lc-msg-action-btn resolve"
+                  onClick={() => handleResolve(msg._id)}
+                >
+                  ✓ Resolve
+                </button>
               )}
             </div>
           </div>
@@ -751,64 +1843,98 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
     );
   };
 
-  const onlineNow = participants.filter(p => isOnline(p.lastActive)).length;
+  const onlineNow = participants.filter((p) => isOnline(p.lastActive)).length;
 
   return (
     <>
       <style>{styles}</style>
       <div className="lc-root">
-
         <div className="lc-header">
           <div className="lc-header-left">
             <div className="lc-header-icon">💬</div>
             <div className="lc-header-text">
               <div className="lc-header-title">Discussion</div>
-              <div className="lc-header-sub">{enrolledCount} enrolled · {onlineNow} online now</div>
+              <div className="lc-header-sub">
+                {enrolledCount} enrolled · {onlineNow} online now
+              </div>
             </div>
           </div>
           <div className="lc-header-right">
-            <div className="lc-live-badge"><div className="lc-live-dot" />Live</div>
+            <div className="lc-live-badge">
+              <div className="lc-live-dot" />
+              Live
+            </div>
             <button
               className={`lc-participants-btn${panelOpen ? " active" : ""}`}
-              onClick={() => setPanelOpen(v => !v)}
+              onClick={() => setPanelOpen((v) => !v)}
               title={panelOpen ? "Hide participants" : "Show participants"}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
             </button>
           </div>
         </div>
 
         <div className="lc-tabs">
-          {[["all","All Messages"],["resources","📎 Resources"],["mine","My Questions"]].map(([k,l]) => (
-            <button key={k} className={`lc-tab${tab === k ? " active" : ""}`} onClick={() => setTab(k)}>{l}</button>
+          {[
+            ["all", "All Messages"],
+            ["resources", "📎 Resources"],
+            ["mine", "My Questions"],
+          ].map(([k, l]) => (
+            <button
+              key={k}
+              className={`lc-tab${tab === k ? " active" : ""}`}
+              onClick={() => setTab(k)}
+            >
+              {l}
+            </button>
           ))}
         </div>
 
         <div className="lc-body">
           <div className="lc-chat-col">
             {loading ? (
-              <div className="lc-loading"><div className="lc-spinner" />Loading discussion…</div>
+              <div className="lc-loading">
+                <div className="lc-spinner" />
+                Loading discussion…
+              </div>
             ) : (
-              <div className="lc-messages" ref={messagesBoxRef} onScroll={handleScroll}>
+              <div
+                className="lc-messages"
+                ref={messagesBoxRef}
+                onScroll={handleScroll}
+              >
                 {groups.length === 0 ? (
                   <div className="lc-empty">
                     <div className="lc-empty-icon">
                       {tab === "all" ? "🙋" : tab === "resources" ? "📎" : "❓"}
                     </div>
                     <div className="lc-empty-title">
-                      {tab === "all" ? "No messages yet" : tab === "resources" ? "No resources" : "No questions yet"}
+                      {tab === "all"
+                        ? "No messages yet"
+                        : tab === "resources"
+                          ? "No resources"
+                          : "No questions yet"}
                     </div>
                     <div className="lc-empty-sub">
                       {tab === "all"
                         ? "Be the first to ask a question or start a discussion!"
                         : tab === "resources"
-                        ? "No files or resources have been shared in this lesson."
-                        : "You haven't posted any questions yet."}
+                          ? "No files or resources have been shared in this lesson."
+                          : "You haven't posted any questions yet."}
                     </div>
                   </div>
                 ) : (
@@ -819,7 +1945,9 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
                         <span className="lc-date-label">{item.label}</span>
                         <div className="lc-date-line" />
                       </div>
-                    ) : renderGroup(item)
+                    ) : (
+                      renderGroup(item)
+                    ),
                   )
                 )}
                 <div ref={messagesEndRef} />
@@ -838,9 +1966,18 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
               {replyTo && (
                 <div className="lc-reply-bar">
                   <span className="lc-reply-bar-icon">↩</span>
-                  <span className="lc-reply-bar-sender">{replyTo.sender?.name}</span>
-                  <span className="lc-reply-bar-text">{replyTo.content?.slice(0, 55) || "Attachment"}</span>
-                  <button className="lc-reply-bar-close" onClick={() => setReplyTo(null)}>✕</button>
+                  <span className="lc-reply-bar-sender">
+                    {replyTo.sender?.name}
+                  </span>
+                  <span className="lc-reply-bar-text">
+                    {replyTo.content?.slice(0, 55) || "Attachment"}
+                  </span>
+                  <button
+                    className="lc-reply-bar-close"
+                    onClick={() => setReplyTo(null)}
+                  >
+                    ✕
+                  </button>
                 </div>
               )}
               {files.length > 0 && (
@@ -851,7 +1988,12 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
                       <div key={i} className="lc-file-chip">
                         <span>{icon}</span>
                         <span className="lc-chip-name">{f.name}</span>
-                        <button className="lc-chip-rm" onClick={() => removeFile(i)}>✕</button>
+                        <button
+                          className="lc-chip-rm"
+                          onClick={() => removeFile(i)}
+                        >
+                          ✕
+                        </button>
                       </div>
                     );
                   })}
@@ -862,7 +2004,11 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
                   <textarea
                     ref={textareaRef}
                     className="lc-textarea"
-                    placeholder={isAdmin ? "Reply to students or share resources…" : "Ask a question about this lesson…"}
+                    placeholder={
+                      isAdmin
+                        ? "Reply to students or share resources…"
+                        : "Ask a question about this lesson…"
+                    }
                     value={text}
                     onChange={handleTextChange}
                     onKeyDown={handleKeyDown}
@@ -870,21 +2016,123 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
                   />
                 </div>
                 <div className="lc-compose-actions">
-                  <input ref={fileInputRef} type="file" accept={ACCEPT_TYPES} multiple hidden onChange={handleFileChange} />
-                  <button className="lc-icon-btn" title="Attach file" onClick={() => fileInputRef.current?.click()}>📎</button>
+                  {/* Emoji picker wrapper */}
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={ACCEPT_TYPES}
+                    multiple
+                    hidden
+                    onChange={handleFileChange}
+                  />
+                  <div style={{ position: "relative" }} ref={emojiPickerRef}>
+                    <button
+                      className="lc-icon-btn"
+                      title="Emoji"
+                      onClick={() => setShowEmoji((v) => !v)}
+                      style={
+                        showEmoji
+                          ? {
+                              background: "var(--c-blue50)",
+                              borderColor: "var(--c-blue200)",
+                            }
+                          : {}
+                      }
+                    >
+                      😊
+                    </button>
+                    {showEmoji && (
+                      <div className="lc-emoji-picker">
+                        <div className="lc-emoji-cats">
+                          {EMOJI_CATS.map((cat, i) => (
+                            <button
+                              key={i}
+                              className={`lc-emoji-cat-btn${emojiCat === i ? " active" : ""}`}
+                              onClick={() => setEmojiCat(i)}
+                              title={cat.name}
+                            >
+                              {cat.label}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="lc-emoji-search">
+                          <div className="lc-emoji-search-wrap">
+                            <span className="lc-emoji-search-icon">🔍</span>
+                            <input
+                              className="lc-emoji-search-input"
+                              type="text"
+                              placeholder="Search emoji…"
+                              value={emojiSearch}
+                              onChange={(e) => setEmojiSearch(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div className="lc-emoji-grid">
+                          {(emojiSearch
+                            ? EMOJI_CATS.flatMap((c) => c.emojis).filter((e) =>
+                                e.includes(emojiSearch),
+                              )
+                            : EMOJI_CATS[emojiCat].emojis
+                          ).map((emoji, i) => (
+                            <button
+                              key={i}
+                              className="lc-emoji-btn"
+                              onClick={() => insertEmoji(emoji)}
+                              onMouseEnter={() => setHoveredEmoji(emoji)}
+                              onMouseLeave={() => setHoveredEmoji(null)}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="lc-emoji-footer">
+                          {hoveredEmoji ? (
+                            <>
+                              <span className="lc-emoji-footer-preview">
+                                {hoveredEmoji}
+                              </span>
+                              {hoveredEmoji}
+                            </>
+                          ) : (
+                            "Hover to preview"
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    className="lc-icon-btn"
+                    title="Attach file"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    📎
+                  </button>
                   <button
                     className="lc-send-btn"
                     onClick={handleSend}
                     disabled={sending || (!text.trim() && files.length === 0)}
                   >
-                    {sending
-                      ? <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,.4)", borderTopColor: "#fff", borderRadius: "50%", animation: "lc-spin .75s linear infinite" }} />
-                      : "➤"}
+                    {sending ? (
+                      <div
+                        style={{
+                          width: 14,
+                          height: 14,
+                          border: "2px solid rgba(255,255,255,.4)",
+                          borderTopColor: "#fff",
+                          borderRadius: "50%",
+                          animation: "lc-spin .75s linear infinite",
+                        }}
+                      />
+                    ) : (
+                      "➤"
+                    )}
                   </button>
                 </div>
               </div>
               <div className="lc-hint">
-                Press <kbd>Enter</kbd> to send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> for new line
+                Press <kbd>Enter</kbd> to send &nbsp;·&nbsp;{" "}
+                <kbd>Shift+Enter</kbd> for new line
               </div>
             </div>
           </div>
