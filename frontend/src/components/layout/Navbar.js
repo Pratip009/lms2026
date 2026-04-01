@@ -179,6 +179,10 @@ const styles = `
     font-size: 10.5px; font-weight: 700; color: white; flex-shrink: 0;
     font-family: var(--font-display);
     box-shadow: 0 1px 4px rgba(37,99,235,0.30);
+    overflow: hidden;
+  }
+  .nav-avatar img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
   }
   .nav-user-name {
     font-size: 13.5px; font-weight: 600; color: var(--ink);
@@ -223,6 +227,10 @@ const styles = `
     font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
     font-family: var(--font-display);
     box-shadow: 0 2px 8px rgba(37,99,235,0.28);
+    overflow: hidden;
+  }
+  .nav-dropdown-avatar-lg img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
   }
   .nav-dropdown-name {
     font-family: var(--font-display);
@@ -325,6 +333,10 @@ const styles = `
     font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
     font-family: var(--font-display);
     box-shadow: 0 2px 8px rgba(37,99,235,0.25);
+    overflow: hidden;
+  }
+  .nav-drawer-avatar img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
   }
   .nav-drawer-user-name {
     font-family: var(--font-display); font-size: 15px; font-weight: 700;
@@ -439,6 +451,37 @@ const LogoMark = () => (
   </svg>
 );
 
+/* ── Avatar component — shows image if available, else initials ── */
+function Avatar({ url, name, className, style, imgStyle }) {
+  const [imgError, setImgError] = useState(false);
+
+  const ini = name
+    ? name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+    : 'U';
+
+  // Reset error state if URL changes (e.g. after a new upload)
+  useEffect(() => { setImgError(false); }, [url]);
+
+  const showImage = url && !imgError;
+
+  return (
+    <div
+      className={className}
+      // Only apply gradient background when showing initials
+      style={showImage ? { ...style, background: 'transparent' } : style}
+    >
+      {showImage ? (
+        <img
+          src={url}
+          alt={name || 'User avatar'}
+          style={imgStyle || { width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          onError={() => setImgError(true)}
+        />
+      ) : ini}
+    </div>
+  );
+}
+
 export default function Navbar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -473,12 +516,23 @@ export default function Navbar() {
   const isActive = path =>
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
 
-  const initials = user?.name
-    ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-    : 'U';
-
   const isAdmin = user?.role === 'admin';
   const isStudent = user?.role === 'student';
+
+  // Avatar URL from user object (set by Profile page after upload)
+  const avatarUrl = user?.avatar?.url || null;
+
+  const avatarGradient = isAdmin
+    ? { background: 'linear-gradient(135deg,#f59e0b,#d97706)' }
+    : { background: 'linear-gradient(135deg, var(--b500), var(--b800))' };
+
+  const userBtnStyle = isAdmin
+    ? { borderColor: 'rgba(245,158,11,0.30)', background: 'rgba(255,251,235,0.60)' }
+    : undefined;
+
+  const dropdownHeaderStyle = isAdmin
+    ? { background: 'linear-gradient(135deg,#fffbeb,rgba(253,230,138,0.30))' }
+    : undefined;
 
   const navLinks = [
     { label: 'Home',       path: '/' },
@@ -499,18 +553,6 @@ export default function Navbar() {
       { label: 'Admin Panel', path: '/admin', Icon: IconAdmin },
     ] : []),
   ];
-
-  const avatarStyle = isAdmin
-    ? { background: 'linear-gradient(135deg,#f59e0b,#d97706)' }
-    : undefined;
-
-  const userBtnStyle = isAdmin
-    ? { borderColor: 'rgba(245,158,11,0.30)', background: 'rgba(255,251,235,0.60)' }
-    : undefined;
-
-  const dropdownHeaderStyle = isAdmin
-    ? { background: 'linear-gradient(135deg,#fffbeb,rgba(253,230,138,0.30))' }
-    : undefined;
 
   return (
     <>
@@ -544,7 +586,14 @@ export default function Navbar() {
                 style={userBtnStyle}
                 onClick={() => setDropdownOpen(o => !o)}
               >
-                <div className="nav-avatar" style={avatarStyle}>{initials}</div>
+                {/* Small avatar — image or initials */}
+                <Avatar
+                  url={avatarUrl}
+                  name={user.name}
+                  className="nav-avatar"
+                  style={avatarGradient}
+                />
+
                 <span className="nav-user-name">{user.name}</span>
                 <span className={`nav-chevron ${dropdownOpen ? 'open' : ''}`}>
                   <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -557,7 +606,13 @@ export default function Navbar() {
                 <div className="nav-dropdown">
                   <div className="nav-dropdown-header" style={dropdownHeaderStyle}>
                     <div className="nav-dropdown-avatar-row">
-                      <div className="nav-dropdown-avatar-lg" style={avatarStyle}>{initials}</div>
+                      {/* Large avatar in dropdown — image or initials */}
+                      <Avatar
+                        url={avatarUrl}
+                        name={user.name}
+                        className="nav-dropdown-avatar-lg"
+                        style={avatarGradient}
+                      />
                       <div>
                         <div className="nav-dropdown-name">{user.name}</div>
                         <div className="nav-dropdown-email">{user.email}</div>
@@ -616,7 +671,13 @@ export default function Navbar() {
       <div className={`nav-drawer ${mobileOpen ? 'open' : ''}`}>
         {user && (
           <div className="nav-drawer-user">
-            <div className="nav-drawer-avatar" style={avatarStyle}>{initials}</div>
+            {/* Mobile drawer avatar — image or initials */}
+            <Avatar
+              url={avatarUrl}
+              name={user.name}
+              className="nav-drawer-avatar"
+              style={avatarGradient}
+            />
             <div>
               <div className="nav-drawer-user-name">{user.name}</div>
               <div className="nav-drawer-user-email">{user.email}</div>

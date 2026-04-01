@@ -101,6 +101,7 @@ router.get("/participants", protect, lessonChatController.getParticipants);
 router.post("/heartbeat", protect, lessonChatController.heartbeat);
 router.get("/download/:msgId/:fileIndex", protect, lessonChatController.downloadFile);
 router.patch("/:msgId/resolve", protect, authorize("admin", "instructor"), lessonChatController.resolveMessage);
+router.delete("/", protect, authorize("admin", "instructor"), lessonChatController.clearChat);
 router.delete("/:msgId", protect, lessonChatController.deleteMessage);
 
 module.exports = router;

@@ -439,3 +439,26 @@ exports.downloadFile = asyncHandler(async (req, res) => {
     }
   });
 });
+
+/* ════════════════════════════════════════════════════════
+  
+   Clears all text-only messages; preserves file messages.
+════════════════════════════════════════════════════════ */
+exports.clearChat = asyncHandler(async (req, res) => {
+  const { courseId, lessonId } = req.params;
+
+  console.log("[clearChat] courseId:", courseId, "| lessonId:", lessonId);
+  console.log("[clearChat] requested by user:", req.user._id, "| role:", req.user.role);
+
+  const result = await LessonMessage.deleteMany({
+    course: courseId,
+    lesson: lessonId,
+    $or: [
+      { files: { $exists: false } },
+      { files: { $size: 0 } },
+    ],
+  });
+
+  console.log("[clearChat] ✓ Deleted", result.deletedCount, "text messages");
+  res.status(200).json({ success: true, data: { deletedCount: result.deletedCount } });
+});

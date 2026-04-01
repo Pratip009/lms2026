@@ -58,7 +58,6 @@ const styles = `
     background: var(--c-bg);
     overflow: hidden;
     position: relative;
-    
   }
 
   @keyframes lc-spin    { to { transform: rotate(360deg); } }
@@ -67,6 +66,76 @@ const styles = `
   @keyframes lc-popIn   { from{opacity:0;transform:scale(.94)} to{opacity:1;transform:scale(1)} }
   @keyframes lc-pulse   { 0%,100%{box-shadow:0 0 0 2px rgba(34,197,94,.22)} 50%{box-shadow:0 0 0 5px rgba(34,197,94,.06)} }
   @keyframes lc-slideUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── Confirm Modal ── */
+  .lc-modal-overlay {
+    position: fixed; inset: 0; z-index: 999;
+    background: rgba(5,15,43,0.55);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    animation: lc-fadeUp .18s ease both;
+  }
+  .lc-modal {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border2);
+    border-radius: var(--r-xl);
+    padding: 28px 28px 24px;
+    max-width: 380px; width: 100%;
+    box-shadow: 0 24px 64px rgba(15,23,42,0.22), 0 4px 16px rgba(15,23,42,0.1);
+    animation: lc-popIn .2s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  .lc-modal-icon {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: var(--c-rose-lt); border: 1px solid var(--c-rose-bd);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; margin-bottom: 16px;
+  }
+  .lc-modal-title {
+    font-family: var(--f-display); font-size: 17px; font-weight: 800;
+    color: var(--c-ink); letter-spacing: -.03em; margin-bottom: 8px;
+  }
+  .lc-modal-body {
+    font-size: 13.5px; color: var(--c-ink3); line-height: 1.65; margin-bottom: 10px;
+  }
+  .lc-modal-note {
+    display: flex; align-items: flex-start; gap: 9px;
+    padding: 10px 13px; border-radius: var(--r-sm);
+    background: var(--c-green-lt); border: 1px solid var(--c-green-bd);
+    font-size: 12px; color: var(--c-green); margin-bottom: 22px; line-height: 1.55;
+  }
+  .lc-modal-note-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  .lc-modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .lc-modal-cancel {
+    padding: 10px 20px; border-radius: var(--r-sm);
+    font-family: var(--f-display); font-size: 12px; font-weight: 700;
+    letter-spacing: .04em; text-transform: uppercase;
+    background: var(--c-surface2); color: var(--c-ink3);
+    border: 1px solid var(--c-border2); cursor: pointer; transition: all .14s;
+  }
+  .lc-modal-cancel:hover { background: var(--c-surface); color: var(--c-ink); }
+  .lc-modal-confirm {
+    padding: 10px 22px; border-radius: var(--r-sm);
+    font-family: var(--f-display); font-size: 12px; font-weight: 700;
+    letter-spacing: .04em; text-transform: uppercase;
+    background: var(--c-rose); color: #fff; border: none;
+    cursor: pointer; transition: all .14s; position: relative; overflow: hidden;
+    box-shadow: 0 3px 12px rgba(225,29,72,0.28);
+  }
+  .lc-modal-confirm:hover:not(:disabled) { background: #be123c; box-shadow: 0 5px 18px rgba(225,29,72,0.38); transform: translateY(-1px); }
+  .lc-modal-confirm:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+  /* ── Clear chat btn in header ── */
+  .lc-clear-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: var(--r-sm);
+    background: rgba(225,29,72,0.12); border: 1px solid rgba(225,29,72,0.25);
+    color: #fca5a5; font-family: var(--f-display); font-size: 10.5px; font-weight: 700;
+    letter-spacing: .04em; text-transform: uppercase; cursor: pointer;
+    transition: all .15s; white-space: nowrap; backdrop-filter: blur(4px);
+  }
+  .lc-clear-btn:hover { background: rgba(225,29,72,0.22); border-color: rgba(225,29,72,0.4); color: #fecaca; }
+  .lc-clear-btn svg { width: 12px; height: 12px; }
 
   .lc-header {
     flex-shrink: 0;
@@ -132,7 +201,7 @@ const styles = `
   .lc-tab:hover { color: var(--c-ink2); background: var(--c-surface2); }
   .lc-tab.active { background: var(--c-blue50); color: var(--c-blue600); border-color: var(--c-blue200); }
 
-  .lc-body { flex: 1; min-height: 0; display: flex; overflow: hidden;min-height: 0; }
+  .lc-body { flex: 1; min-height: 0; display: flex; overflow: hidden; min-height: 0; }
 
   .lc-participants {
     width: 200px; flex-shrink: 0; border-left: 1px solid var(--c-border);
@@ -199,7 +268,7 @@ const styles = `
   .lc-p-online-status { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--c-green); font-weight: 600; }
   .lc-p-online-status::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--c-green); animation: lc-pulse 2.4s ease-in-out infinite; }
 
-  .lc-chat-col { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden;min-height: 0; }
+  .lc-chat-col { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
 
   .lc-messages {
     flex: 1; overflow-y: auto; padding: 20px 20px 12px;
@@ -331,152 +400,43 @@ const styles = `
 
   .lc-hint { margin-top: 7px; font-size: 10.5px; color: var(--c-ink5); display: flex; align-items: center; gap: 5px; }
   .lc-hint kbd { padding: 1px 5px; border: 1px solid var(--c-border2); border-radius: 4px; font-size: 10px; font-family: var(--f-body); background: var(--c-surface2); color: var(--c-ink4); }
-The issue is that the picker is using position: absolute; bottom: calc(100% + 10px) which opens it upward, but when there's not enough space above, it clips. Also the picker itself has a fixed max-height: 200px grid causing internal scroll. Here are the two fixes:
-1. Open the picker downward instead of upward — change the positioning in the CSS:
-css/* REPLACE this in .lc-emoji-picker */
-.lc-emoji-picker {
-    position: absolute;
-    bottom: calc(100% + 10px);   /* ← REMOVE these two lines */
-    left: 50%;
-    transform: translateX(-50%);
 
-    /* REPLACE WITH: opens downward, anchored to right edge */
+  .lc-emoji-picker {
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
     left: auto;
     transform: none;
-
     width: 288px;
     background: var(--c-surface);
     border: 1px solid var(--c-border2);
     border-radius: var(--r-xl);
     box-shadow: 0 8px 32px rgba(15,23,42,0.14), 0 2px 8px rgba(15,23,42,0.08);
     overflow: hidden;
-    animation: ep-popUp 0.18s cubic-bezier(0.34,1.56,0.64,1) both;
+    animation: lc-popIn 0.18s cubic-bezier(0.34,1.56,0.64,1) both;
     z-index: 100;
-}
-  @keyframes ep-popUp {
-    from { opacity: 0; transform: scale(0.9) translateY(-8px); }
-    to   { opacity: 1; transform: scale(1)   translateY(0);    }
-}
-
-  .lc-emoji-cats {
-    display: flex;
-    gap: 2px;
-    padding: 10px 10px 0;
-    border-bottom: 1px solid var(--c-border);
-    overflow-x: auto;
-    scrollbar-width: none;
   }
+  .lc-emoji-cats { display: flex; gap: 2px; padding: 10px 10px 0; border-bottom: 1px solid var(--c-border); overflow-x: auto; scrollbar-width: none; }
   .lc-emoji-cats::-webkit-scrollbar { display: none; }
-
-  .lc-emoji-cat-btn {
-    flex-shrink: 0;
-    width: 34px;
-    height: 32px;
-    border: none;
-    background: transparent;
-    border-radius: var(--r-sm);
-    font-size: 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.13s;
-    position: relative;
-  }
+  .lc-emoji-cat-btn { flex-shrink: 0; width: 34px; height: 32px; border: none; background: transparent; border-radius: var(--r-sm); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.13s; position: relative; }
   .lc-emoji-cat-btn:hover { background: var(--c-surface2); }
   .lc-emoji-cat-btn.active { background: var(--c-blue50); }
-  .lc-emoji-cat-btn.active::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 20px;
-    height: 2.5px;
-    background: var(--c-blue500);
-    border-radius: 2px 2px 0 0;
-  }
-
-  .lc-emoji-search {
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--c-border);
-  }
+  .lc-emoji-cat-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%); width: 20px; height: 2.5px; background: var(--c-blue500); border-radius: 2px 2px 0 0; }
+  .lc-emoji-search { padding: 8px 10px; border-bottom: 1px solid var(--c-border); }
   .lc-emoji-search-wrap { position: relative; }
-  .lc-emoji-search-icon {
-    position: absolute;
-    left: 9px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 12px;
-    color: var(--c-ink4);
-    pointer-events: none;
-  }
-  .lc-emoji-search-input {
-    width: 100%;
-    padding: 6px 10px 6px 28px;
-    background: var(--c-bg);
-    border: 1px solid var(--c-border2);
-    border-radius: var(--r-sm);
-    font-size: 12px;
-    font-family: var(--f-body);
-    color: var(--c-ink);
-    outline: none;
-    transition: border-color .15s, box-shadow .15s;
-    box-sizing: border-box;
-  }
-  .lc-emoji-search-input:focus {
-    border-color: var(--c-blue500);
-    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-    background: var(--c-surface);
-  }
+  .lc-emoji-search-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--c-ink4); pointer-events: none; }
+  .lc-emoji-search-input { width: 100%; padding: 6px 10px 6px 28px; background: var(--c-bg); border: 1px solid var(--c-border2); border-radius: var(--r-sm); font-size: 12px; font-family: var(--f-body); color: var(--c-ink); outline: none; transition: border-color .15s, box-shadow .15s; box-sizing: border-box; }
+  .lc-emoji-search-input:focus { border-color: var(--c-blue500); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); background: var(--c-surface); }
   .lc-emoji-search-input::placeholder { color: var(--c-ink4); }
-
- /* REPLACE max-height in .lc-emoji-grid */
-.lc-emoji-grid {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 2px;
-    padding: 8px 8px 10px;
-    max-height: none;      /* ← was 200px, remove the cap */
-    overflow-y: visible;   /* ← no scroll */
-    scrollbar-width: thin;
-    scrollbar-color: var(--c-border) transparent;
-}
+  .lc-emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; padding: 8px 8px 10px; max-height: none; overflow-y: visible; scrollbar-width: thin; scrollbar-color: var(--c-border) transparent; }
   .lc-emoji-grid::-webkit-scrollbar { width: 4px; }
   .lc-emoji-grid::-webkit-scrollbar-thumb { background: var(--c-border); border-radius: 4px; }
-
-  .lc-emoji-btn {
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: transparent;
-    border-radius: var(--r-sm);
-    font-size: 17px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.1s, transform 0.12s;
-    line-height: 1;
-  }
+  .lc-emoji-btn { width: 32px; height: 32px; border: none; background: transparent; border-radius: var(--r-sm); font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.1s, transform 0.12s; line-height: 1; }
   .lc-emoji-btn:hover { background: var(--c-surface2); transform: scale(1.18); }
   .lc-emoji-btn:active { transform: scale(0.95); }
-
-  .lc-emoji-footer {
-    padding: 6px 12px 8px;
-    border-top: 1px solid var(--c-border);
-    font-size: 10.5px;
-    color: var(--c-ink4);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 30px;
-    font-family: var(--f-display);
-  }
+  .lc-emoji-footer { padding: 6px 12px 8px; border-top: 1px solid var(--c-border); font-size: 10.5px; color: var(--c-ink4); display: flex; align-items: center; gap: 6px; min-height: 30px; font-family: var(--f-display); }
   .lc-emoji-footer-preview { font-size: 16px; }
+
   @media (max-width: 540px) {
     .lc-participants { display: none !important; }
     .lc-header { padding: 12px 14px; }
@@ -490,6 +450,7 @@ css/* REPLACE this in .lc-emoji-picker */
 // ─── Helpers ─────────────────────────────────────────────
 const isOnline = (t) =>
   t && Date.now() - new Date(t).getTime() < ONLINE_THRESHOLD_MS;
+
 const fileIcon = (name = "") => {
   const ext = name.split(".").pop().toLowerCase();
   if (ext === "pdf") return { icon: "📄", cls: "fi-pdf" };
@@ -497,61 +458,75 @@ const fileIcon = (name = "") => {
     return { icon: "🖼️", cls: "fi-img" };
   if (["zip", "rar", "7z"].includes(ext)) return { icon: "🗜️", cls: "fi-zip" };
   if (["doc", "docx"].includes(ext)) return { icon: "📝", cls: "fi-doc" };
-  if (["xls", "xlsx", "csv"].includes(ext))
-    return { icon: "📊", cls: "fi-xls" };
+  if (["xls", "xlsx", "csv"].includes(ext)) return { icon: "📊", cls: "fi-xls" };
   return { icon: "📎", cls: "fi-other" };
 };
+
 const fmtSize = (b) =>
-  !b
-    ? ""
-    : b < 1024
-      ? `${b} B`
-      : b < 1048576
-        ? `${(b / 1024).toFixed(1)} KB`
-        : `${(b / 1048576).toFixed(1)} MB`;
+  !b ? "" : b < 1024 ? `${b} B` : b < 1048576
+    ? `${(b / 1024).toFixed(1)} KB`
+    : `${(b / 1048576).toFixed(1)} MB`;
+
 const fmtTime = (s) =>
   new Date(s).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
 const fmtDate = (s) => {
-  const d = new Date(s),
-    today = new Date();
+  const d = new Date(s), today = new Date();
   const yest = new Date(today);
   yest.setDate(today.getDate() - 1);
   if (d.toDateString() === today.toDateString()) return "Today";
   if (d.toDateString() === yest.toDateString()) return "Yesterday";
-  return d.toLocaleDateString([], {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return d.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
 };
+
 const initials = (n) =>
-  (n || "?")
-    .trim()
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() || "?";
+  (n || "?").trim().split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "?";
+
+// ─── Confirm Modal ───────────────────────────────────────
+function ClearChatModal({ onConfirm, onCancel, clearing }) {
+  return (
+    <div className="lc-modal-overlay" onClick={(e) => e.target === e.currentTarget && onCancel()}>
+      <div className="lc-modal">
+        <div className="lc-modal-icon">🗑️</div>
+        <div className="lc-modal-title">Clear Chat History</div>
+        <div className="lc-modal-body">
+          This will permanently delete all text messages in this lesson's discussion. This action cannot be undone.
+        </div>
+        <div className="lc-modal-note">
+          <span className="lc-modal-note-icon">✅</span>
+          <span>
+            <strong>Resources are safe.</strong> Any files or attachments shared in this chat will be kept and still visible in the Resources tab.
+          </span>
+        </div>
+        <div className="lc-modal-actions">
+          <button className="lc-modal-cancel" onClick={onCancel} disabled={clearing}>
+            Cancel
+          </button>
+          <button className="lc-modal-confirm" onClick={onConfirm} disabled={clearing}>
+            {clearing ? (
+              <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                <span style={{ width: 12, height: 12, border: "2px solid rgba(255,255,255,.4)", borderTopColor: "#fff", borderRadius: "50%", animation: "lc-spin .75s linear infinite", display: "inline-block" }} />
+                Clearing…
+              </span>
+            ) : "Yes, Clear Chat"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── ParticipantRow ──────────────────────────────────────
 function ParticipantRow({ p, currentUser }) {
   const isInstructor = p.role === "admin" || p.role === "instructor";
   const online = isOnline(p.lastActive);
-  const isSelf =
-    currentUser?._id && p._id?.toString() === currentUser._id.toString();
-  const avatarUrl =
-    typeof p.avatar === "string" ? p.avatar : p.avatar?.url || null;
+  const isSelf = currentUser?._id && p._id?.toString() === currentUser._id.toString();
+  const avatarUrl = typeof p.avatar === "string" ? p.avatar : p.avatar?.url || null;
   return (
     <div className={`lc-p-row${isSelf ? " is-self" : ""}`}>
       <div className={`lc-p-avatar ${isInstructor ? "instructor" : "student"}`}>
         {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt={p.name}
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
-          />
+          <img src={avatarUrl} alt={p.name} onError={(e) => { e.currentTarget.style.display = "none"; }} />
         ) : (
           initials(p.name)
         )}
@@ -562,13 +537,9 @@ function ParticipantRow({ p, currentUser }) {
           {isSelf ? "You" : p.name}
         </div>
         <div className={`lc-p-role${isInstructor ? " instructor" : ""}`}>
-          {isInstructor ? (
-            "Instructor"
-          ) : online ? (
+          {isInstructor ? "Instructor" : online ? (
             <span className="lc-p-online-status">Online</span>
-          ) : (
-            "Offline"
-          )}
+          ) : "Offline"}
         </div>
       </div>
       {isSelf && <span className="lc-p-you-pill">You</span>}
@@ -577,27 +548,15 @@ function ParticipantRow({ p, currentUser }) {
 }
 
 // ─── ParticipantsPanel ───────────────────────────────────
-function ParticipantsPanel({
-  participants,
-  enrolledCount,
-  visible,
-  currentUser,
-}) {
-  const instructors = participants.filter(
-    (p) => p.role === "admin" || p.role === "instructor",
-  );
-  const students = participants.filter(
-    (p) => p.role !== "admin" && p.role !== "instructor",
-  );
+function ParticipantsPanel({ participants, enrolledCount, visible, currentUser }) {
+  const instructors = participants.filter((p) => p.role === "admin" || p.role === "instructor");
+  const students = participants.filter((p) => p.role !== "admin" && p.role !== "instructor");
   const sortSelfFirst = (a, b) => {
-    const as =
-      currentUser?._id && a._id?.toString() === currentUser._id.toString();
-    const bs =
-      currentUser?._id && b._id?.toString() === currentUser._id.toString();
+    const as = currentUser?._id && a._id?.toString() === currentUser._id.toString();
+    const bs = currentUser?._id && b._id?.toString() === currentUser._id.toString();
     if (as) return -1;
     if (bs) return 1;
-    const ao = isOnline(a.lastActive),
-      bo = isOnline(b.lastActive);
+    const ao = isOnline(a.lastActive), bo = isOnline(b.lastActive);
     return ao === bo ? 0 : ao ? -1 : 1;
   };
   const onlineCount = participants.filter((p) => isOnline(p.lastActive)).length;
@@ -614,12 +573,10 @@ function ParticipantsPanel({
         </div>
         <div className="lc-online-row">
           <div className="lc-online-pill on">
-            <div className="lc-status-dot on" />
-            {onlineCount} online
+            <div className="lc-status-dot on" />{onlineCount} online
           </div>
           <div className="lc-online-pill off">
-            <div className="lc-status-dot off" />
-            {participants.length - onlineCount} offline
+            <div className="lc-status-dot off" />{participants.length - onlineCount} offline
           </div>
         </div>
       </div>
@@ -634,23 +591,14 @@ function ParticipantsPanel({
         )}
         {students.length > 0 && (
           <>
-            <div className="lc-p-section-label" style={{ marginTop: 6 }}>
-              Students
-            </div>
+            <div className="lc-p-section-label" style={{ marginTop: 6 }}>Students</div>
             {[...students].sort(sortSelfFirst).map((p) => (
               <ParticipantRow key={p._id} p={p} currentUser={currentUser} />
             ))}
           </>
         )}
         {participants.length === 0 && (
-          <div
-            style={{
-              padding: "24px 8px",
-              textAlign: "center",
-              fontSize: 12,
-              color: "var(--c-ink4)",
-            }}
-          >
+          <div style={{ padding: "24px 8px", textAlign: "center", fontSize: 12, color: "var(--c-ink4)" }}>
             No participants yet
           </div>
         )}
@@ -659,769 +607,54 @@ function ParticipantsPanel({
   );
 }
 
+// ─── EMOJI DATA ──────────────────────────────────────────
+const EMOJI_CATS = [
+  { label: "😊", emojis: ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥸","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😢","😭","😤","😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🤗","🤔","🤭","🤫","🤥","😶","😐","😑","😬","🙄","😯","😦","😧","😮","😲","🥱","😴","🤤","😪","😵","🤐","🥴","🤢","🤮","🤧","😷","🤒","🤕"] },
+  { label: "👋", emojis: ["👋","🤚","🖐","✋","🖖","👌","🤌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","🦾","🦵","🦶","👂","🦻","👃","🧠","🦷","🦴","👀","👁","👅","👄","💋","🫦"] },
+  { label: "🐶", emojis: ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🙈","🙉","🙊","🐔","🐧","🐦","🐤","🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄","🐝","🐛","🦋","🐌","🐞","🐜","🦟","🦗","🕷","🦂","🐢","🐍","🦎","🐙","🦑","🦐","🦞","🦀","🐡","🐠","🐟","🐬","🐳","🐋","🦈","🐊","🐅","🐆","🦓","🦍","🦧","🐘","🦛","🦏","🐪","🐫","🦒","🦘","🐃","🐂","🐄","🐎","🐖","🐏","🐑","🦙","🐐","🦌","🐕","🐩","🦮","🐈","🐓","🦃","🦤","🦚","🦜","🦢","🦩","🕊","🐇","🦝","🦨","🦡","🦫","🦦","🦥","🐁","🐀","🐿","🦔"] },
+  { label: "🍎", emojis: ["🍎","🍐","🍊","🍋","🍌","🍉","🍇","🍓","🫐","🍈","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🍆","🥑","🥦","🥬","🥒","🌶","🧄","🧅","🥔","🍠","🥐","🥯","🍞","🥖","🥨","🧀","🥚","🍳","🧈","🥞","🧇","🥓","🥩","🍗","🍖","🌭","🍔","🍟","🍕","🥪","🥙","🧆","🌮","🌯","🥗","🥘","🍝","🍜","🍲","🍛","🍣","🍱","🥟","🦪","🍤","🍙","🍚","🍘","🍥","🥮","🍢","🧁","🍰","🎂","🍮","🍭","🍬","🍫","🍿","🍩","🍪","🌰","🥜","🍯","🧃","🥤","🧋","☕","🍵","🍺","🍻","🥂","🍷","🥃","🍸","🍹","🧉","🍾"] },
+  { label: "⚽", emojis: ["⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🎱","🪀","🏓","🏸","🏒","🏑","🥍","🏏","🪃","🥅","⛳","🪁","🏹","🎣","🤿","🥊","🥋","🎽","🛹","🛼","🛷","⛸","🥌","🎿","⛷","🏂","🪂","🏋️","🤼","🤸","⛹️","🤺","🏇","🧘","🏄","🏊","🤽","🚣","🧗","🚵","🚴","🏆","🥇","🥈","🥉","🏅","🎖","🏵","🎗","🎫","🎟","🎪","🤹","🎭","🩰","🎨","🎬","🎤","🎧","🎼","🎵","🎶","🎹","🥁","🪘","🎷","🎺","🪗","🎸","🪕","🎻","🎲","♟","🎯","🎳","🎮","🎰","🧩"] },
+  { label: "❤️", emojis: ["❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣️","💕","💞","💓","💗","💖","💘","💝","💟","☮️","✝️","☪️","🕉","☸️","✡️","🔯","🕎","☯️","☦️","🛐","⭕","✅","☑️","✔️","❎","💯","💢","🔔","🎵","🎶","💹","♻️","⚜️","🔱","🔰","🟥","🟧","🟨","🟩","🟦","🟪","⬛","⬜","🟫"] },
+];
+
 // ─── Main ────────────────────────────────────────────────
 export default function LessonChat({ courseId, lessonId, currentUser }) {
-  const messagesEndRef = useRef(null);
-  const messagesBoxRef = useRef(null);
-  const textareaRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const initialDone = useRef(false);
-  const prevCount = useRef(0);
+  const messagesEndRef  = useRef(null);
+  const messagesBoxRef  = useRef(null);
+  const textareaRef     = useRef(null);
+  const fileInputRef    = useRef(null);
+  const emojiPickerRef  = useRef(null);
+  const initialDone     = useRef(false);
+  const prevCount       = useRef(0);
 
-  const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState("");
-  const [text, setText] = useState("");
-  const [files, setFiles] = useState([]);
-  const [replyTo, setReplyTo] = useState(null);
-  const [tab, setTab] = useState("all");
-  const [atBottom, setAtBottom] = useState(true);
-  const [newCount, setNewCount] = useState(0);
-  const [participants, setParticipants] = useState([]);
+  const [messages,      setMessages]      = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [sending,       setSending]       = useState(false);
+  const [clearing,      setClearing]      = useState(false);
+  const [showClearModal,setShowClearModal] = useState(false);
+  const [error,         setError]         = useState("");
+  const [text,          setText]          = useState("");
+  const [files,         setFiles]         = useState([]);
+  const [replyTo,       setReplyTo]       = useState(null);
+  const [tab,           setTab]           = useState("all");
+  const [atBottom,      setAtBottom]      = useState(true);
+  const [newCount,      setNewCount]      = useState(0);
+  const [participants,  setParticipants]  = useState([]);
   const [enrolledCount, setEnrolledCount] = useState(0);
-  const [panelOpen, setPanelOpen] = useState(true);
-  const [showEmoji, setShowEmoji] = useState(false);
-  const [emojiCat, setEmojiCat] = useState(0);
-  const emojiPickerRef = useRef(null);
-  const [emojiSearch, setEmojiSearch] = useState("");
-  const [hoveredEmoji, setHoveredEmoji] = useState(null);
-  const EMOJI_CATS = [
-    {
-      label: "😊",
-      emojis: [
-        "😀",
-        "😃",
-        "😄",
-        "😁",
-        "😆",
-        "😅",
-        "😂",
-        "🤣",
-        "😊",
-        "😇",
-        "🙂",
-        "🙃",
-        "😉",
-        "😌",
-        "😍",
-        "🥰",
-        "😘",
-        "😗",
-        "😙",
-        "😚",
-        "😋",
-        "😛",
-        "😝",
-        "😜",
-        "🤪",
-        "🤨",
-        "🧐",
-        "🤓",
-        "😎",
-        "🥸",
-        "🤩",
-        "🥳",
-        "😏",
-        "😒",
-        "😞",
-        "😔",
-        "😟",
-        "😕",
-        "🙁",
-        "☹️",
-        "😣",
-        "😖",
-        "😫",
-        "😩",
-        "🥺",
-        "😢",
-        "😭",
-        "😤",
-        "😠",
-        "😡",
-        "🤬",
-        "🤯",
-        "😳",
-        "🥵",
-        "🥶",
-        "😱",
-        "😨",
-        "😰",
-        "😥",
-        "😓",
-        "🤗",
-        "🤔",
-        "🤭",
-        "🤫",
-        "🤥",
-        "😶",
-        "😐",
-        "😑",
-        "😬",
-        "🙄",
-        "😯",
-        "😦",
-        "😧",
-        "😮",
-        "😲",
-        "🥱",
-        "😴",
-        "🤤",
-        "😪",
-        "😵",
-        "🤐",
-        "🥴",
-        "🤢",
-        "🤮",
-        "🤧",
-        "😷",
-        "🤒",
-        "🤕",
-      ],
-    },
-    {
-      label: "👋",
-      emojis: [
-        "👋",
-        "🤚",
-        "🖐",
-        "✋",
-        "🖖",
-        "👌",
-        "🤌",
-        "🤏",
-        "✌️",
-        "🤞",
-        "🤟",
-        "🤘",
-        "🤙",
-        "👈",
-        "👉",
-        "👆",
-        "🖕",
-        "👇",
-        "☝️",
-        "👍",
-        "👎",
-        "✊",
-        "👊",
-        "🤛",
-        "🤜",
-        "👏",
-        "🙌",
-        "👐",
-        "🤲",
-        "🤝",
-        "🙏",
-        "✍️",
-        "💅",
-        "🤳",
-        "💪",
-        "🦾",
-        "🦵",
-        "🦶",
-        "👂",
-        "🦻",
-        "👃",
-        "🫀",
-        "🫁",
-        "🧠",
-        "🦷",
-        "🦴",
-        "👀",
-        "👁",
-        "👅",
-        "👄",
-        "💋",
-        "🫦",
-      ],
-    },
-    {
-      label: "🐶",
-      emojis: [
-        "🐶",
-        "🐱",
-        "🐭",
-        "🐹",
-        "🐰",
-        "🦊",
-        "🐻",
-        "🐼",
-        "🐨",
-        "🐯",
-        "🦁",
-        "🐮",
-        "🐷",
-        "🐸",
-        "🐵",
-        "🙈",
-        "🙉",
-        "🙊",
-        "🐔",
-        "🐧",
-        "🐦",
-        "🐤",
-        "🦆",
-        "🦅",
-        "🦉",
-        "🦇",
-        "🐺",
-        "🐗",
-        "🐴",
-        "🦄",
-        "🐝",
-        "🐛",
-        "🦋",
-        "🐌",
-        "🐞",
-        "🐜",
-        "🦟",
-        "🦗",
-        "🕷",
-        "🦂",
-        "🐢",
-        "🐍",
-        "🦎",
-        "🦖",
-        "🦕",
-        "🐙",
-        "🦑",
-        "🦐",
-        "🦞",
-        "🦀",
-        "🐡",
-        "🐠",
-        "🐟",
-        "🐬",
-        "🐳",
-        "🐋",
-        "🦈",
-        "🐊",
-        "🐅",
-        "🐆",
-        "🦓",
-        "🦍",
-        "🦧",
-        "🦣",
-        "🐘",
-        "🦛",
-        "🦏",
-        "🐪",
-        "🐫",
-        "🦒",
-        "🦘",
-        "🦬",
-        "🐃",
-        "🐂",
-        "🐄",
-        "🐎",
-        "🐖",
-        "🐏",
-        "🐑",
-        "🦙",
-        "🐐",
-        "🦌",
-        "🐕",
-        "🐩",
-        "🦮",
-        "🐈",
-        "🐓",
-        "🦃",
-        "🦤",
-        "🦚",
-        "🦜",
-        "🦢",
-        "🦩",
-        "🕊",
-        "🐇",
-        "🦝",
-        "🦨",
-        "🦡",
-        "🦫",
-        "🦦",
-        "🦥",
-        "🐁",
-        "🐀",
-        "🐿",
-        "🦔",
-      ],
-    },
-    {
-      label: "🍎",
-      emojis: [
-        "🍎",
-        "🍐",
-        "🍊",
-        "🍋",
-        "🍌",
-        "🍉",
-        "🍇",
-        "🍓",
-        "🫐",
-        "🍈",
-        "🍒",
-        "🍑",
-        "🥭",
-        "🍍",
-        "🥥",
-        "🥝",
-        "🍅",
-        "🍆",
-        "🥑",
-        "🥦",
-        "🥬",
-        "🥒",
-        "🌶",
-        "🫑",
-        "🧄",
-        "🧅",
-        "🥔",
-        "🍠",
-        "🥐",
-        "🥯",
-        "🍞",
-        "🥖",
-        "🥨",
-        "🧀",
-        "🥚",
-        "🍳",
-        "🧈",
-        "🥞",
-        "🧇",
-        "🥓",
-        "🥩",
-        "🍗",
-        "🍖",
-        "🦴",
-        "🌭",
-        "🍔",
-        "🍟",
-        "🍕",
-        "🫓",
-        "🥪",
-        "🥙",
-        "🧆",
-        "🌮",
-        "🌯",
-        "🫔",
-        "🥗",
-        "🥘",
-        "🫕",
-        "🍝",
-        "🍜",
-        "🍲",
-        "🍛",
-        "🍣",
-        "🍱",
-        "🥟",
-        "🦪",
-        "🍤",
-        "🍙",
-        "🍚",
-        "🍘",
-        "🍥",
-        "🥮",
-        "🍢",
-        "🧁",
-        "🍰",
-        "🎂",
-        "🍮",
-        "🍭",
-        "🍬",
-        "🍫",
-        "🍿",
-        "🍩",
-        "🍪",
-        "🌰",
-        "🥜",
-        "🍯",
-        "🧃",
-        "🥤",
-        "🧋",
-        "☕",
-        "🍵",
-        "🫖",
-        "🍺",
-        "🍻",
-        "🥂",
-        "🍷",
-        "🫗",
-        "🥃",
-        "🍸",
-        "🍹",
-        "🧉",
-        "🍾",
-      ],
-    },
-    {
-      label: "⚽",
-      emojis: [
-        "⚽",
-        "🏀",
-        "🏈",
-        "⚾",
-        "🥎",
-        "🎾",
-        "🏐",
-        "🏉",
-        "🥏",
-        "🎱",
-        "🪀",
-        "🏓",
-        "🏸",
-        "🏒",
-        "🏑",
-        "🥍",
-        "🏏",
-        "🪃",
-        "🥅",
-        "⛳",
-        "🪁",
-        "🏹",
-        "🎣",
-        "🤿",
-        "🥊",
-        "🥋",
-        "🎽",
-        "🛹",
-        "🛼",
-        "🛷",
-        "⛸",
-        "🥌",
-        "🎿",
-        "⛷",
-        "🏂",
-        "🪂",
-        "🏋️",
-        "🤼",
-        "🤸",
-        "⛹️",
-        "🤺",
-        "🏇",
-        "🧘",
-        "🏄",
-        "🏊",
-        "🤽",
-        "🚣",
-        "🧗",
-        "🚵",
-        "🚴",
-        "🏆",
-        "🥇",
-        "🥈",
-        "🥉",
-        "🏅",
-        "🎖",
-        "🏵",
-        "🎗",
-        "🎫",
-        "🎟",
-        "🎪",
-        "🤹",
-        "🎭",
-        "🩰",
-        "🎨",
-        "🎬",
-        "🎤",
-        "🎧",
-        "🎼",
-        "🎵",
-        "🎶",
-        "🎹",
-        "🥁",
-        "🪘",
-        "🎷",
-        "🎺",
-        "🪗",
-        "🎸",
-        "🪕",
-        "🎻",
-        "🎲",
-        "♟",
-        "🎯",
-        "🎳",
-        "🎮",
-        "🎰",
-        "🧩",
-      ],
-    },
-    {
-      label: "🌍",
-      emojis: [
-        "🌍",
-        "🌎",
-        "🌏",
-        "🌐",
-        "🗺",
-        "🧭",
-        "🏔",
-        "⛰",
-        "🌋",
-        "🗻",
-        "🏕",
-        "🏖",
-        "🏜",
-        "🏝",
-        "🏞",
-        "🏟",
-        "🏛",
-        "🏗",
-        "🏘",
-        "🏚",
-        "🏠",
-        "🏡",
-        "🏢",
-        "🏣",
-        "🏤",
-        "🏥",
-        "🏦",
-        "🏨",
-        "🏩",
-        "🏪",
-        "🏫",
-        "🏬",
-        "🏭",
-        "🏯",
-        "🏰",
-        "💒",
-        "🗼",
-        "🗽",
-        "⛪",
-        "🕌",
-        "🛕",
-        "🕍",
-        "⛩",
-        "🕋",
-        "⛲",
-        "⛺",
-        "🌁",
-        "🌃",
-        "🏙",
-        "🌄",
-        "🌅",
-        "🌆",
-        "🌇",
-        "🌉",
-        "♨️",
-        "🎠",
-        "🎡",
-        "🎢",
-        "💈",
-        "🎪",
-        "🚂",
-        "🚃",
-        "🚄",
-        "🚅",
-        "🚆",
-        "🚇",
-        "🚈",
-        "🚉",
-        "🚊",
-        "🚝",
-        "🚞",
-        "🚋",
-        "🚌",
-        "🚍",
-        "🚎",
-        "🚐",
-        "🚑",
-        "🚒",
-        "🚓",
-        "🚔",
-        "🚕",
-        "🚖",
-        "🚗",
-        "🚘",
-        "🚙",
-        "🛻",
-        "🚚",
-        "🚛",
-        "🚜",
-        "🏎",
-        "🏍",
-        "🛵",
-        "🦽",
-        "🦼",
-        "🛺",
-        "🚲",
-        "🛴",
-        "🛹",
-        "🛼",
-        "🚏",
-        "🛣",
-        "🛤",
-        "⛽",
-        "🚨",
-        "🚥",
-        "🚦",
-        "✈️",
-        "🛫",
-        "🛬",
-        "🛩",
-        "💺",
-        "🛸",
-        "🚁",
-        "🛶",
-        "⛵",
-        "🚤",
-        "🛥",
-        "🛳",
-        "⛴",
-        "🚢",
-        "⚓",
-        "🪝",
-        "⛽",
-        "🗺",
-      ],
-    },
-    {
-      label: "❤️",
-      emojis: [
-        "❤️",
-        "🧡",
-        "💛",
-        "💚",
-        "💙",
-        "💜",
-        "🖤",
-        "🤍",
-        "🤎",
-        "💔",
-        "❣️",
-        "💕",
-        "💞",
-        "💓",
-        "💗",
-        "💖",
-        "💘",
-        "💝",
-        "💟",
-        "☮️",
-        "✝️",
-        "☪️",
-        "🕉",
-        "☸️",
-        "✡️",
-        "🔯",
-        "🕎",
-        "☯️",
-        "☦️",
-        "🛐",
-        "⛎",
-        "♈",
-        "♉",
-        "♊",
-        "♋",
-        "♌",
-        "♍",
-        "♎",
-        "♏",
-        "♐",
-        "♑",
-        "♒",
-        "♓",
-        "🆔",
-        "⚛️",
-        "🉑",
-        "☢️",
-        "☣️",
-        "📴",
-        "📳",
-        "🈶",
-        "🈚",
-        "🈸",
-        "🈺",
-        "🈷️",
-        "✴️",
-        "🆚",
-        "💮",
-        "🉐",
-        "㊙️",
-        "㊗️",
-        "🈴",
-        "🈵",
-        "🈹",
-        "🈲",
-        "🅰️",
-        "🅱️",
-        "🆎",
-        "🆑",
-        "🅾️",
-        "🆘",
-        "❌",
-        "⭕",
-        "🛑",
-        "⛔",
-        "📛",
-        "🚫",
-        "💯",
-        "💢",
-        "♨️",
-        "🚷",
-        "🚯",
-        "🚳",
-        "🚱",
-        "🔞",
-        "📵",
-        "🔕",
-        "🔇",
-        "🔈",
-        "🔉",
-        "🔊",
-        "📢",
-        "📣",
-        "📯",
-        "🔔",
-        "🔕",
-        "🎵",
-        "🎶",
-        "💹",
-        "🛗",
-        "🏧",
-        "💱",
-        "💲",
-        "⚕️",
-        "♻️",
-        "⚜️",
-        "🔱",
-        "📛",
-        "🔰",
-        "⭕",
-        "✅",
-        "☑️",
-        "✔️",
-        "❎",
-        "🔲",
-        "🔳",
-        "▪️",
-        "▫️",
-        "◾",
-        "◽",
-        "◼️",
-        "◻️",
-        "🟥",
-        "🟧",
-        "🟨",
-        "🟩",
-        "🟦",
-        "🟪",
-        "⬛",
-        "⬜",
-        "🟫",
-      ],
-    },
-  ];
+  const [panelOpen,     setPanelOpen]     = useState(true);
+  const [showEmoji,     setShowEmoji]     = useState(false);
+  const [emojiCat,      setEmojiCat]      = useState(0);
+  const [emojiSearch,   setEmojiSearch]   = useState("");
+  const [hoveredEmoji,  setHoveredEmoji]  = useState(null);
 
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "instructor";
+
+  // ── Close emoji picker on outside click ─────────────────
   useEffect(() => {
     if (!showEmoji) return;
     const handler = (e) => {
-      if (
-        emojiPickerRef.current &&
-        !emojiPickerRef.current.contains(e.target)
-      ) {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target))
         setShowEmoji(false);
-      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -1429,101 +662,66 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
 
   const insertEmoji = (emoji) => {
     const el = textareaRef.current;
-    if (!el) {
-      setText((t) => t + emoji);
-      return;
-    }
+    if (!el) { setText((t) => t + emoji); return; }
     const start = el.selectionStart;
-    const end = el.selectionEnd;
+    const end   = el.selectionEnd;
     const newVal = text.slice(0, start) + emoji + text.slice(end);
     setText(newVal);
-    // Restore cursor after emoji
     requestAnimationFrame(() => {
       el.focus();
       el.setSelectionRange(start + emoji.length, start + emoji.length);
     });
   };
-  const isAdmin =
-    currentUser?.role === "admin" || currentUser?.role === "instructor";
 
+  // ── Data fetching ────────────────────────────────────────
   const fetchParticipants = useCallback(async () => {
     try {
-      const r = await api.get(
-        `/courses/${courseId}/lessons/${lessonId}/chat/participants`,
-      );
+      const r = await api.get(`/courses/${courseId}/lessons/${lessonId}/chat/participants`);
       const d = r.data.data || r.data;
       setParticipants(d.participants || []);
       setEnrolledCount(d.enrolledCount ?? d.participants?.length ?? 0);
     } catch (err) {
-      if (err.response?.status === 429) {
-        console.warn(
-          "[LessonChat] participants rate-limited, will retry next interval",
-        );
-      }
+      if (err.response?.status === 429)
+        console.warn("[LessonChat] participants rate-limited");
     }
   }, [courseId, lessonId]);
 
-  const fetchMessages = useCallback(
-    async (silent = false) => {
-      try {
-        const r = await api.get(
-          `/courses/${courseId}/lessons/${lessonId}/chat`,
-        );
-        const incoming = r.data.data?.messages || r.data.messages || [];
-        setMessages((prev) => {
-          if (initialDone.current && !atBottom && incoming.length > prev.length)
-            setNewCount((n) => n + (incoming.length - prev.length));
-          return incoming;
-        });
-      } catch (err) {
-        if (err.response?.status === 429) {
-          console.warn(
-            "[LessonChat] messages rate-limited, will retry next interval",
-          );
-          return;
-        }
-        if (!silent)
-          setError(err.response?.data?.message || "Failed to load messages");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [courseId, lessonId, atBottom],
-  );
+  const fetchMessages = useCallback(async (silent = false) => {
+    try {
+      const r = await api.get(`/courses/${courseId}/lessons/${lessonId}/chat`);
+      const incoming = r.data.data?.messages || r.data.messages || [];
+      setMessages((prev) => {
+        if (initialDone.current && !atBottom && incoming.length > prev.length)
+          setNewCount((n) => n + (incoming.length - prev.length));
+        return incoming;
+      });
+    } catch (err) {
+      if (err.response?.status === 429) { console.warn("[LessonChat] rate-limited"); return; }
+      if (!silent) setError(err.response?.data?.message || "Failed to load messages");
+    } finally {
+      setLoading(false);
+    }
+  }, [courseId, lessonId, atBottom]);
 
   const sendHeartbeat = useCallback(async () => {
-    try {
-      await api.post(`/courses/${courseId}/lessons/${lessonId}/chat/heartbeat`);
-    } catch (_) {}
+    try { await api.post(`/courses/${courseId}/lessons/${lessonId}/chat/heartbeat`); } catch (_) {}
   }, [courseId, lessonId]);
 
   useEffect(() => {
     initialDone.current = false;
-    prevCount.current = 0;
-    fetchMessages().then(() => {
-      initialDone.current = true;
-    });
+    prevCount.current   = 0;
+    fetchMessages().then(() => { initialDone.current = true; });
     fetchParticipants();
     sendHeartbeat();
-    const msgTimer = setInterval(() => fetchMessages(true), POLL_MESSAGES_MS);
-    const partTimer = setInterval(
-      () => fetchParticipants(),
-      POLL_PARTICIPANTS_MS,
-    );
-    const heartbeatTimer = setInterval(() => sendHeartbeat(), HEARTBEAT_MS);
-    return () => {
-      clearInterval(msgTimer);
-      clearInterval(partTimer);
-      clearInterval(heartbeatTimer);
-    };
+    const msgTimer       = setInterval(() => fetchMessages(true),   POLL_MESSAGES_MS);
+    const partTimer      = setInterval(() => fetchParticipants(),   POLL_PARTICIPANTS_MS);
+    const heartbeatTimer = setInterval(() => sendHeartbeat(),       HEARTBEAT_MS);
+    return () => { clearInterval(msgTimer); clearInterval(partTimer); clearInterval(heartbeatTimer); };
   }, [fetchMessages, fetchParticipants, sendHeartbeat]);
 
   useEffect(() => {
     const cur = messages.length;
-    if (!initialDone.current) {
-      prevCount.current = cur;
-      return;
-    }
+    if (!initialDone.current) { prevCount.current = cur; return; }
     if (cur > prevCount.current && atBottom) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       setNewCount(0);
@@ -1545,61 +743,42 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
     setNewCount(0);
   };
 
-  // ── Send ─────────────────────────────────────────────────────────────────────
-  // THE FIX: pass { headers: { 'Content-Type': undefined } } so axios does NOT
-  // override the multipart/form-data boundary that the browser sets automatically.
-  // Without this, axios sends Content-Type: application/json and multer sees no files.
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ── Clear Chat ───────────────────────────────────────────
+  // Calls: DELETE /api/courses/:courseId/lessons/:lessonId/chat
+  // The backend deletes only messages where files array is empty/missing.
+  const handleClearChat = async () => {
+    setClearing(true);
+    setError("");
+    try {
+      await api.delete(`/courses/${courseId}/lessons/${lessonId}/chat`);
+      setShowClearModal(false);
+      // Switch to Resources tab so admin can confirm files are preserved
+      setTab("resources");
+      await fetchMessages(true);
+      scrollToBottom();
+    } catch (err) {
+      console.error("[handleClearChat] failed:", err.response?.data);
+      setError(err.response?.data?.message || "Failed to clear chat. Please try again.");
+      setShowClearModal(false);
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  // ── Send ─────────────────────────────────────────────────
   const handleSend = async () => {
     const trimmed = text.trim();
     if (!trimmed && files.length === 0) return;
-
-    console.log("[handleSend] ── Starting send ─────────────────────────────");
-    console.log("[handleSend] text         :", JSON.stringify(trimmed));
-    console.log("[handleSend] files count  :", files.length);
-    console.log("[handleSend] replyTo      :", replyTo?._id ?? null);
-
     setSending(true);
     setError("");
-
     try {
       const form = new FormData();
       form.append("content", trimmed);
       if (replyTo) form.append("replyToId", replyTo._id);
       files.forEach((f) => form.append("files", f));
-
-      // ── Log every FormData entry so we can verify files are attached ──
-      console.log("[handleSend] FormData entries:");
-      for (const [key, val] of form.entries()) {
-        if (val instanceof File) {
-          console.log(
-            `[handleSend]   ${key} → File( name=${val.name}, type=${val.type}, size=${val.size} )`,
-          );
-        } else {
-          console.log(`[handleSend]   ${key} → "${val}"`);
-        }
-      }
-
-      console.log(
-        "[handleSend] Sending POST with Content-Type: undefined (multipart boundary set by browser)",
-      );
-
-      const response = await api.post(
-        `/courses/${courseId}/lessons/${lessonId}/chat`,
-        form,
-        {
-          // ▼▼▼ THIS IS THE CRITICAL FIX ▼▼▼
-          // Setting Content-Type to undefined tells axios to remove its default
-          // 'application/json' header and let the browser set the correct
-          // 'multipart/form-data; boundary=...' header automatically.
-          // Without this, multer on the server never sees the files.
-          headers: { "Content-Type": undefined },
-        },
-      );
-
-      console.log("[handleSend] ✓ POST success, status:", response.status);
-      console.log("[handleSend] response data:", response.data);
-
+      await api.post(`/courses/${courseId}/lessons/${lessonId}/chat`, form, {
+        headers: { "Content-Type": undefined },
+      });
       setText("");
       setFiles([]);
       setReplyTo(null);
@@ -1607,26 +786,17 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
       await fetchMessages(true);
       scrollToBottom();
     } catch (err) {
-      console.error("[handleSend] ✗ POST failed");
-      console.error("[handleSend] status  :", err.response?.status);
-      console.error("[handleSend] body    :", err.response?.data);
-      console.error("[handleSend] message :", err.message);
-
-      if (err.response?.status === 429) {
+      if (err.response?.status === 429)
         setError("You're sending messages too quickly. Please wait a moment.");
-      } else {
+      else
         setError(err.response?.data?.message || "Failed to send message.");
-      }
     } finally {
       setSending(false);
     }
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
   const handleTextChange = (e) => {
@@ -1638,34 +808,18 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
 
   const handleFileChange = (e) => {
     const chosen = Array.from(e.target.files || []);
-    console.log(
-      "[handleFileChange] files chosen:",
-      chosen.map((f) => `${f.name} (${f.type}, ${f.size}b)`),
-    );
     setFiles((prev) => [...prev, ...chosen].slice(0, 5));
     e.target.value = "";
   };
 
-  const removeFile = (i) => {
-    console.log("[removeFile] removing file at index:", i);
-    setFiles((f) => f.filter((_, idx) => idx !== i));
-  };
+  const removeFile = (i) => setFiles((f) => f.filter((_, idx) => idx !== i));
 
   const handleDownload = async (msgId, fi, fileName) => {
-    console.log(
-      "[handleDownload] msgId:",
-      msgId,
-      "| fileIndex:",
-      fi,
-      "| fileName:",
-      fileName,
-    );
     try {
       const res = await api.get(
         `/courses/${courseId}/lessons/${lessonId}/chat/download/${msgId}/${fi}`,
-        { responseType: "blob" },
+        { responseType: "blob" }
       );
-      console.log("[handleDownload] ✓ blob received, size:", res.data?.size);
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement("a");
       a.href = url;
@@ -1675,141 +829,79 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error(
-        "[handleDownload] ✗ failed:",
-        err.response?.status,
-        err.message,
-      );
       setError("Failed to download file.");
     }
   };
 
   const handleResolve = async (msgId) => {
-    console.log("[handleResolve] msgId:", msgId);
     try {
-      await api.patch(
-        `/courses/${courseId}/lessons/${lessonId}/chat/${msgId}/resolve`,
-      );
+      await api.patch(`/courses/${courseId}/lessons/${lessonId}/chat/${msgId}/resolve`);
       await fetchMessages(true);
     } catch (err) {
       console.error("[handleResolve] failed:", err.response?.data);
     }
   };
 
-  // ── Build grouped message structure ──────────────────
+  // ── Build grouped message structure ──────────────────────
   const visible = messages.filter((m) => {
     if (tab === "resources") return m.files?.length > 0;
-    if (tab === "mine")
-      return m.sender?._id?.toString() === currentUser?._id?.toString();
+    if (tab === "mine") return m.sender?._id?.toString() === currentUser?._id?.toString();
     return true;
   });
 
   const groups = [];
   visible.forEach((msg, i) => {
     const prev = visible[i - 1];
-    const newDate = !prev || fmtDate(prev.createdAt) !== fmtDate(msg.createdAt);
-    const newSender =
-      !prev ||
-      prev.sender?._id !== msg.sender?._id ||
-      new Date(msg.createdAt) - new Date(prev.createdAt) > 5 * 60000;
-    if (newDate)
-      groups.push({ type: "divider", label: fmtDate(msg.createdAt) });
-    if (newSender) {
-      groups.push({ type: "group", sender: msg.sender, msgs: [msg] });
-    } else {
-      groups[groups.length - 1].msgs.push(msg);
-    }
+    const newDate   = !prev || fmtDate(prev.createdAt) !== fmtDate(msg.createdAt);
+    const newSender = !prev || prev.sender?._id !== msg.sender?._id || new Date(msg.createdAt) - new Date(prev.createdAt) > 5 * 60000;
+    if (newDate)   groups.push({ type: "divider", label: fmtDate(msg.createdAt) });
+    if (newSender) groups.push({ type: "group", sender: msg.sender, msgs: [msg] });
+    else           groups[groups.length - 1].msgs.push(msg);
   });
 
   const renderGroup = (g) => {
-    const isSelf =
-      currentUser?._id &&
-      g.sender?._id?.toString() === currentUser._id.toString();
-    const isInstructor =
-      g.sender?.role === "admin" || g.sender?.role === "instructor";
-    const avatarUrl =
-      typeof g.sender?.avatar === "string"
-        ? g.sender.avatar
-        : g.sender?.avatar?.url || null;
-    const avCls = isSelf
-      ? "av-own"
-      : isInstructor
-        ? "av-instructor"
-        : "av-student";
-    const nameCls = isSelf ? "own" : isInstructor ? "instructor" : "student";
-    const bubbleCls = isSelf
-      ? "bbl-own"
-      : isInstructor
-        ? "bbl-instructor"
-        : "bbl-student";
+    const isSelf       = currentUser?._id && g.sender?._id?.toString() === currentUser._id.toString();
+    const isInstructor = g.sender?.role === "admin" || g.sender?.role === "instructor";
+    const avatarUrl    = typeof g.sender?.avatar === "string" ? g.sender.avatar : g.sender?.avatar?.url || null;
+    const avCls        = isSelf ? "av-own" : isInstructor ? "av-instructor" : "av-student";
+    const nameCls      = isSelf ? "own"    : isInstructor ? "instructor"    : "student";
+    const bubbleCls    = isSelf ? "bbl-own": isInstructor ? "bbl-instructor": "bbl-student";
 
     return (
-      <div
-        key={g.msgs[0]._id}
-        className={`lc-msg-group${isSelf ? " own" : ""}`}
-      >
+      <div key={g.msgs[0]._id} className={`lc-msg-group${isSelf ? " own" : ""}`}>
         <div className="lc-msg-header">
           <div className={`lc-avatar ${avCls}`}>
             {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt={g.sender?.name}
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                  e.currentTarget.parentNode.textContent = initials(
-                    g.sender?.name,
-                  );
-                }}
-              />
-            ) : (
-              initials(g.sender?.name)
-            )}
+              <img src={avatarUrl} alt={g.sender?.name}
+                onError={(e) => { e.currentTarget.style.display = "none"; e.currentTarget.parentNode.textContent = initials(g.sender?.name); }} />
+            ) : initials(g.sender?.name)}
           </div>
           {isSelf ? (
             <span className="lc-you-tag">You</span>
           ) : (
-            <span className={`lc-sender-name ${nameCls}`}>
-              {g.sender?.name}
-            </span>
+            <span className={`lc-sender-name ${nameCls}`}>{g.sender?.name}</span>
           )}
           {isInstructor && <span className="lc-role-tag">Instructor</span>}
           <span className="lc-msg-time">{fmtTime(g.msgs[0].createdAt)}</span>
         </div>
 
         {g.msgs.map((msg) => (
-          <div
-            key={msg._id}
-            style={{ display: "flex", flexDirection: "column", gap: 2 }}
-          >
+          <div key={msg._id} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <div className="lc-bubble-row">
               <div className="lc-avatar-spacer" />
               <div className={`lc-bubble ${bubbleCls}`}>
                 {msg.replyTo && (
                   <div className="lc-reply-quote">
-                    <span className="lc-reply-quote-sender">
-                      {msg.replyTo.sender?.name}
-                    </span>
-                    <span className="lc-reply-quote-text">
-                      {msg.replyTo.content?.slice(0, 60) || "Attachment"}
-                    </span>
+                    <span className="lc-reply-quote-sender">{msg.replyTo.sender?.name}</span>
+                    <span className="lc-reply-quote-text">{msg.replyTo.content?.slice(0, 60) || "Attachment"}</span>
                   </div>
                 )}
-                {msg.content && (
-                  <span style={{ whiteSpace: "pre-wrap" }}>{msg.content}</span>
-                )}
-                {msg.resolved && (
-                  <span className="lc-resolved-tag" style={{ marginLeft: 8 }}>
-                    ✓ Resolved
-                  </span>
-                )}
+                {msg.content && <span style={{ whiteSpace: "pre-wrap" }}>{msg.content}</span>}
+                {msg.resolved && <span className="lc-resolved-tag" style={{ marginLeft: 8 }}>✓ Resolved</span>}
                 {msg.files?.map((f, fi) => {
                   const { icon, cls } = fileIcon(f.name);
                   return (
-                    <div
-                      key={fi}
-                      className="lc-file-card"
-                      onClick={() => handleDownload(msg._id, fi, f.name)}
-                    >
+                    <div key={fi} className="lc-file-card" onClick={() => handleDownload(msg._id, fi, f.name)}>
                       <div className={`lc-file-icon-wrap ${cls}`}>{icon}</div>
                       <div className="lc-file-meta">
                         <span className="lc-file-name">{f.name}</span>
@@ -1822,19 +914,9 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
               </div>
             </div>
             <div className="lc-msg-actions">
-              <button
-                className="lc-msg-action-btn"
-                onClick={() => setReplyTo(msg)}
-              >
-                ↩ Reply
-              </button>
+              <button className="lc-msg-action-btn" onClick={() => setReplyTo(msg)}>↩ Reply</button>
               {isAdmin && !msg.resolved && (
-                <button
-                  className="lc-msg-action-btn resolve"
-                  onClick={() => handleResolve(msg._id)}
-                >
-                  ✓ Resolve
-                </button>
+                <button className="lc-msg-action-btn resolve" onClick={() => handleResolve(msg._id)}>✓ Resolve</button>
               )}
             </div>
           </div>
@@ -1848,15 +930,24 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
   return (
     <>
       <style>{styles}</style>
+
+      {/* ── Clear Chat Confirm Modal ── */}
+      {showClearModal && (
+        <ClearChatModal
+          onConfirm={handleClearChat}
+          onCancel={() => setShowClearModal(false)}
+          clearing={clearing}
+        />
+      )}
+
       <div className="lc-root">
+        {/* ── Header ── */}
         <div className="lc-header">
           <div className="lc-header-left">
             <div className="lc-header-icon">💬</div>
             <div className="lc-header-text">
               <div className="lc-header-title">Discussion</div>
-              <div className="lc-header-sub">
-                {enrolledCount} enrolled · {onlineNow} online now
-              </div>
+              <div className="lc-header-sub">{enrolledCount} enrolled · {onlineNow} online now</div>
             </div>
           </div>
           <div className="lc-header-right">
@@ -1864,21 +955,32 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
               <div className="lc-live-dot" />
               Live
             </div>
+
+            {/* ── Clear Chat button — admin only ── */}
+            {isAdmin && (
+              <button
+                className="lc-clear-btn"
+                onClick={() => setShowClearModal(true)}
+                title="Clear chat history (keeps files)"
+              >
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 17 6" />
+                  <path d="M8 6V4h4v2" />
+                  <path d="M5 6l1 11a1 1 0 001 1h6a1 1 0 001-1l1-11" />
+                  <line x1="10" y1="11" x2="10" y2="15" />
+                  <line x1="8"  y1="11" x2="8"  y2="15" />
+                  <line x1="12" y1="11" x2="12" y2="15" />
+                </svg>
+                Clear Chat
+              </button>
+            )}
+
             <button
               className={`lc-participants-btn${panelOpen ? " active" : ""}`}
               onClick={() => setPanelOpen((v) => !v)}
               title={panelOpen ? "Hide participants" : "Show participants"}
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -1888,17 +990,10 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
           </div>
         </div>
 
+        {/* ── Tabs ── */}
         <div className="lc-tabs">
-          {[
-            ["all", "All Messages"],
-            ["resources", "📎 Resources"],
-            ["mine", "My Questions"],
-          ].map(([k, l]) => (
-            <button
-              key={k}
-              className={`lc-tab${tab === k ? " active" : ""}`}
-              onClick={() => setTab(k)}
-            >
+          {[["all", "All Messages"], ["resources", "📎 Resources"], ["mine", "My Questions"]].map(([k, l]) => (
+            <button key={k} className={`lc-tab${tab === k ? " active" : ""}`} onClick={() => setTab(k)}>
               {l}
             </button>
           ))}
@@ -1908,26 +1003,17 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
           <div className="lc-chat-col">
             {loading ? (
               <div className="lc-loading">
-                <div className="lc-spinner" />
-                Loading discussion…
+                <div className="lc-spinner" /> Loading discussion…
               </div>
             ) : (
-              <div
-                className="lc-messages"
-                ref={messagesBoxRef}
-                onScroll={handleScroll}
-              >
+              <div className="lc-messages" ref={messagesBoxRef} onScroll={handleScroll}>
                 {groups.length === 0 ? (
                   <div className="lc-empty">
                     <div className="lc-empty-icon">
                       {tab === "all" ? "🙋" : tab === "resources" ? "📎" : "❓"}
                     </div>
                     <div className="lc-empty-title">
-                      {tab === "all"
-                        ? "No messages yet"
-                        : tab === "resources"
-                          ? "No resources"
-                          : "No questions yet"}
+                      {tab === "all" ? "No messages yet" : tab === "resources" ? "No resources" : "No questions yet"}
                     </div>
                     <div className="lc-empty-sub">
                       {tab === "all"
@@ -1945,9 +1031,7 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
                         <span className="lc-date-label">{item.label}</span>
                         <div className="lc-date-line" />
                       </div>
-                    ) : (
-                      renderGroup(item)
-                    ),
+                    ) : renderGroup(item)
                   )
                 )}
                 <div ref={messagesEndRef} />
@@ -1966,18 +1050,9 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
               {replyTo && (
                 <div className="lc-reply-bar">
                   <span className="lc-reply-bar-icon">↩</span>
-                  <span className="lc-reply-bar-sender">
-                    {replyTo.sender?.name}
-                  </span>
-                  <span className="lc-reply-bar-text">
-                    {replyTo.content?.slice(0, 55) || "Attachment"}
-                  </span>
-                  <button
-                    className="lc-reply-bar-close"
-                    onClick={() => setReplyTo(null)}
-                  >
-                    ✕
-                  </button>
+                  <span className="lc-reply-bar-sender">{replyTo.sender?.name}</span>
+                  <span className="lc-reply-bar-text">{replyTo.content?.slice(0, 55) || "Attachment"}</span>
+                  <button className="lc-reply-bar-close" onClick={() => setReplyTo(null)}>✕</button>
                 </div>
               )}
               {files.length > 0 && (
@@ -1988,12 +1063,7 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
                       <div key={i} className="lc-file-chip">
                         <span>{icon}</span>
                         <span className="lc-chip-name">{f.name}</span>
-                        <button
-                          className="lc-chip-rm"
-                          onClick={() => removeFile(i)}
-                        >
-                          ✕
-                        </button>
+                        <button className="lc-chip-rm" onClick={() => removeFile(i)}>✕</button>
                       </div>
                     );
                   })}
@@ -2004,11 +1074,7 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
                   <textarea
                     ref={textareaRef}
                     className="lc-textarea"
-                    placeholder={
-                      isAdmin
-                        ? "Reply to students or share resources…"
-                        : "Ask a question about this lesson…"
-                    }
+                    placeholder={isAdmin ? "Reply to students or share resources…" : "Ask a question about this lesson…"}
                     value={text}
                     onChange={handleTextChange}
                     onKeyDown={handleKeyDown}
@@ -2016,29 +1082,13 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
                   />
                 </div>
                 <div className="lc-compose-actions">
-                  {/* Emoji picker wrapper */}
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept={ACCEPT_TYPES}
-                    multiple
-                    hidden
-                    onChange={handleFileChange}
-                  />
+                  <input ref={fileInputRef} type="file" accept={ACCEPT_TYPES} multiple hidden onChange={handleFileChange} />
                   <div style={{ position: "relative" }} ref={emojiPickerRef}>
                     <button
                       className="lc-icon-btn"
                       title="Emoji"
                       onClick={() => setShowEmoji((v) => !v)}
-                      style={
-                        showEmoji
-                          ? {
-                              background: "var(--c-blue50)",
-                              borderColor: "var(--c-blue200)",
-                            }
-                          : {}
-                      }
+                      style={showEmoji ? { background: "var(--c-blue50)", borderColor: "var(--c-blue200)" } : {}}
                     >
                       😊
                     </button>
@@ -2046,93 +1096,41 @@ export default function LessonChat({ courseId, lessonId, currentUser }) {
                       <div className="lc-emoji-picker">
                         <div className="lc-emoji-cats">
                           {EMOJI_CATS.map((cat, i) => (
-                            <button
-                              key={i}
-                              className={`lc-emoji-cat-btn${emojiCat === i ? " active" : ""}`}
-                              onClick={() => setEmojiCat(i)}
-                              title={cat.name}
-                            >
-                              {cat.label}
-                            </button>
+                            <button key={i} className={`lc-emoji-cat-btn${emojiCat === i ? " active" : ""}`} onClick={() => setEmojiCat(i)}>{cat.label}</button>
                           ))}
                         </div>
                         <div className="lc-emoji-search">
                           <div className="lc-emoji-search-wrap">
                             <span className="lc-emoji-search-icon">🔍</span>
-                            <input
-                              className="lc-emoji-search-input"
-                              type="text"
-                              placeholder="Search emoji…"
-                              value={emojiSearch}
-                              onChange={(e) => setEmojiSearch(e.target.value)}
-                            />
+                            <input className="lc-emoji-search-input" type="text" placeholder="Search emoji…" value={emojiSearch} onChange={(e) => setEmojiSearch(e.target.value)} />
                           </div>
                         </div>
                         <div className="lc-emoji-grid">
                           {(emojiSearch
-                            ? EMOJI_CATS.flatMap((c) => c.emojis).filter((e) =>
-                                e.includes(emojiSearch),
-                              )
+                            ? EMOJI_CATS.flatMap((c) => c.emojis).filter((e) => e.includes(emojiSearch))
                             : EMOJI_CATS[emojiCat].emojis
                           ).map((emoji, i) => (
-                            <button
-                              key={i}
-                              className="lc-emoji-btn"
-                              onClick={() => insertEmoji(emoji)}
-                              onMouseEnter={() => setHoveredEmoji(emoji)}
-                              onMouseLeave={() => setHoveredEmoji(null)}
-                            >
+                            <button key={i} className="lc-emoji-btn" onClick={() => insertEmoji(emoji)} onMouseEnter={() => setHoveredEmoji(emoji)} onMouseLeave={() => setHoveredEmoji(null)}>
                               {emoji}
                             </button>
                           ))}
                         </div>
                         <div className="lc-emoji-footer">
-                          {hoveredEmoji ? (
-                            <>
-                              <span className="lc-emoji-footer-preview">
-                                {hoveredEmoji}
-                              </span>
-                              {hoveredEmoji}
-                            </>
-                          ) : (
-                            "Hover to preview"
-                          )}
+                          {hoveredEmoji ? <><span className="lc-emoji-footer-preview">{hoveredEmoji}</span>{hoveredEmoji}</> : "Hover to preview"}
                         </div>
                       </div>
                     )}
                   </div>
-                  <button
-                    className="lc-icon-btn"
-                    title="Attach file"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    📎
-                  </button>
-                  <button
-                    className="lc-send-btn"
-                    onClick={handleSend}
-                    disabled={sending || (!text.trim() && files.length === 0)}
-                  >
+                  <button className="lc-icon-btn" title="Attach file" onClick={() => fileInputRef.current?.click()}>📎</button>
+                  <button className="lc-send-btn" onClick={handleSend} disabled={sending || (!text.trim() && files.length === 0)}>
                     {sending ? (
-                      <div
-                        style={{
-                          width: 14,
-                          height: 14,
-                          border: "2px solid rgba(255,255,255,.4)",
-                          borderTopColor: "#fff",
-                          borderRadius: "50%",
-                          animation: "lc-spin .75s linear infinite",
-                        }}
-                      />
-                    ) : (
-                      "➤"
-                    )}
+                      <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,.4)", borderTopColor: "#fff", borderRadius: "50%", animation: "lc-spin .75s linear infinite" }} />
+                    ) : "➤"}
                   </button>
                 </div>
               </div>
               <div className="lc-hint">
-                Press <kbd>Enter</kbd> to send &nbsp;·&nbsp;{" "}
-                <kbd>Shift+Enter</kbd> for new line
+                Press <kbd>Enter</kbd> to send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> for new line
               </div>
             </div>
           </div>

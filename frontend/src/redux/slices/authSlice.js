@@ -65,7 +65,6 @@ export const fetchMe = createAsyncThunk(
 );
 
 // ─── helper: set auth state after login/verify ────────────
-// receives full action object — reads action.payload
 const setAuthState = (state, action) => {
   const p         = action.payload;
   state.loading   = false;
@@ -93,17 +92,21 @@ const authSlice = createSlice({
     setToken: (state, action) => {
       state.token = action.payload;
     },
+    // ── Used by Profile.jsx after avatar upload or name save ──
+    // Merges the updated user object into state so every component
+    // reading state.auth.user (header, sidebar, etc.) updates instantly.
+    setUser: (state, action) => {
+      state.user = action.payload;
+    },
   },
   extraReducers: (builder) => {
 
     // ── Register ──────────────────────────────────────────
-    // Backend returns { email } only — user is NOT logged in yet
     builder.addCase(register.pending,   (s)    => { s.loading = true;  s.error = null; });
     builder.addCase(register.fulfilled, (s)    => { s.loading = false; s.error = null; });
     builder.addCase(register.rejected,  (s, a) => { s.loading = false; s.error = a.payload; });
 
     // ── Verify OTP ────────────────────────────────────────
-    // User is logged in here after email verification
     builder.addCase(verifyOtp.pending,   (s)    => { s.loading = true;  s.error = null; });
     builder.addCase(verifyOtp.fulfilled, (s, a) => { setAuthState(s, a); });
     builder.addCase(verifyOtp.rejected,  (s, a) => { s.loading = false; s.error = a.payload; });
@@ -123,7 +126,6 @@ const authSlice = createSlice({
     });
 
     // ── Fetch me ──────────────────────────────────────────
-    // handles both flat { user } and nested { data: { user } } shapes
     builder.addCase(fetchMe.fulfilled, (s, a) => {
       s.user = a.payload?.user ?? a.payload?.data?.user ?? null;
     });
@@ -135,5 +137,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, setToken } = authSlice.actions;
+export const { clearError, setToken, setUser } = authSlice.actions;
 export default authSlice.reducer;
