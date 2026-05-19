@@ -12,7 +12,7 @@ const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
 
 const connectDB = require("./config/db");
-const connectRedis = require("./config/redis");
+
 const logger = require("./config/logger");
 const errorHandler = require("./middlewares/errorHandler");
 const { notFound } = require("./middlewares/notFound");
@@ -40,14 +40,11 @@ connectDB().catch((err) => {
   process.exit(1);
 });
 
-// Redis is non-critical — log warning but keep server running
-connectRedis().catch((err) => {
-  console.warn("⚠️  Redis connection failed (caching disabled):", err.message);
-});
-
-// ─── Verify Nodemailer on startup ─────────────────────────
+// ─── Verify Resend email service on startup ───────────────
 const { verifyEmailService } = require("./utils/emailService");
-verifyEmailService();
+verifyEmailService().catch((err) =>
+  console.error("❌ Email service error:", err.message)
+);
 
 // ─── Stripe webhook (raw body required — MUST come before json()) ─
 app.use("/api/webhooks", webhookRoutes);
@@ -79,7 +76,6 @@ if (process.env.NODE_ENV === "development") {
 }
 
 // ─── Global rate limiter ──────────────────────────────────
-// Raised from 100 → 300 so normal API usage isn't throttled
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000, // 15 min
   max: parseInt(process.env.RATE_LIMIT_MAX) || 300,
@@ -106,19 +102,12 @@ const authLimiter = rateLimit({
 app.use("/api/auth", authLimiter);
 
 // ─── Chat rate limiter ────────────────────────────────────
-// Much more generous than the global limiter because the frontend
-// polls /chat and /chat/participants on a repeating interval.
-// Using per-user key (not per-IP) so shared networks aren't penalised.
 const chatLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 600,                  // ~40 req/min sustained — well above polling needs
+  windowMs: 15 * 60 * 1000,
+  max: 600,
   standardHeaders: true,
   legacyHeaders: false,
-  // req.user is populated by protect() middleware in each route handler,
-  // but rate limiting runs before route handlers. We fall back to IP here;
-  // the large max means IP-level collisions aren't a practical problem.
   keyGenerator: (req) => {
-    // Authorization header carries the JWT — extract sub as key if possible
     try {
       const token = (req.headers.authorization || "").replace("Bearer ", "");
       if (token) {
@@ -159,8 +148,7 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/admin", adminRoutes);
 
-// Chat gets its own limiter — must be registered BEFORE the generic
-// /api/courses route so Express uses chatLimiter for this path.
+// Chat gets its own limiter
 app.use(
   "/api/courses/:courseId/lessons/:lessonId/chat",
   chatLimiter,

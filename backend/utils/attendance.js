@@ -1,4 +1,3 @@
-const { getRedis } = require("../config/redis");
 const Attendance = require("../models/Attendance");
 const logger = require("../config/logger");
 
@@ -7,16 +6,18 @@ const getTodayDate = () => new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 const SESSION_KEY = (userId, sessionId) => `session:${userId}:${sessionId}`;
 const ACTIVE_SESSION_KEY = (userId) => `active_session:${userId}`;
 
+// In-memory store replacing Redis
+const sessionStore = new Map();
+const activeSessionStore = new Map();
+
 /**
  * Start a new attendance session for a user.
  */
 const startAttendanceSession = async (userId, sessionId, ipAddress, userAgent) => {
   try {
-    const redis = getRedis();
     const now = new Date();
     const todayDate = getTodayDate();
 
-    // Store active session in Redis
     const sessionData = {
       sessionId,
       userId: userId.toString(),
@@ -26,9 +27,8 @@ const startAttendanceSession = async (userId, sessionId, ipAddress, userAgent) =
       userAgent: userAgent || "",
     };
 
-    const TTL = 24 * 60 * 60; // 24 hours
-    await redis.setex(SESSION_KEY(userId, sessionId), TTL, JSON.stringify(sessionData));
-    await redis.setex(ACTIVE_SESSION_KEY(userId), TTL, sessionId);
+    sessionStore.set(SESSION_KEY(userId, sessionId), sessionData);
+    activeSessionStore.set(ACTIVE_SESSION_KEY(userId), sessionId);
 
     // Upsert daily attendance record
     await Attendance.findOneAndUpdate(
@@ -58,18 +58,16 @@ const startAttendanceSession = async (userId, sessionId, ipAddress, userAgent) =
 };
 
 /**
- * Heartbeat — update session last-active time in Redis.
+ * Heartbeat — update session last-active time in memory.
  */
 const heartbeatSession = async (userId, sessionId) => {
   try {
-    const redis = getRedis();
     const key = SESSION_KEY(userId, sessionId);
-    const raw = await redis.get(key);
-    if (!raw) return false;
+    const data = sessionStore.get(key);
+    if (!data) return false;
 
-    const data = JSON.parse(raw);
     data.lastHeartbeat = new Date().toISOString();
-    await redis.setex(key, 24 * 60 * 60, JSON.stringify(data));
+    sessionStore.set(key, data);
     return true;
   } catch (err) {
     logger.error(`heartbeatSession error: ${err.message}`);
@@ -82,16 +80,14 @@ const heartbeatSession = async (userId, sessionId) => {
  */
 const endAttendanceSession = async (userId, sessionId) => {
   try {
-    const redis = getRedis();
     const key = SESSION_KEY(userId, sessionId);
-    const raw = await redis.get(key);
+    const data = sessionStore.get(key);
 
-    if (!raw) {
-      logger.warn(`endAttendanceSession: session ${sessionId} not found in Redis`);
+    if (!data) {
+      logger.warn(`endAttendanceSession: session ${sessionId} not found in store`);
       return;
     }
 
-    const data = JSON.parse(raw);
     const loginAt = new Date(data.loginAt);
     const logoutAt = new Date();
     const duration = Math.floor((logoutAt - loginAt) / 1000); // seconds
@@ -118,11 +114,11 @@ const endAttendanceSession = async (userId, sessionId) => {
       await attendance.save();
     }
 
-    // Cleanup Redis
-    await redis.del(key);
-    const activeSession = await redis.get(ACTIVE_SESSION_KEY(userId));
+    // Cleanup in-memory store
+    sessionStore.delete(key);
+    const activeSession = activeSessionStore.get(ACTIVE_SESSION_KEY(userId));
     if (activeSession === sessionId) {
-      await redis.del(ACTIVE_SESSION_KEY(userId));
+      activeSessionStore.delete(ACTIVE_SESSION_KEY(userId));
     }
 
     logger.info(`Session ended: user=${userId} session=${sessionId} duration=${duration}s`);
@@ -132,12 +128,11 @@ const endAttendanceSession = async (userId, sessionId) => {
 };
 
 /**
- * Get the active session ID for a user (from Redis).
+ * Get the active session ID for a user (from memory).
  */
 const getActiveSessionId = async (userId) => {
   try {
-    const redis = getRedis();
-    return await redis.get(ACTIVE_SESSION_KEY(userId));
+    return activeSessionStore.get(ACTIVE_SESSION_KEY(userId)) ?? null;
   } catch {
     return null;
   }

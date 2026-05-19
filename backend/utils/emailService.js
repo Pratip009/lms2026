@@ -1,35 +1,33 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  family: 4, // force IPv4 — fixes ENETUNREACH on Render free tier
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+const FROM = `BHI Learning <${process.env.EMAIL_FROM}>`;
 
 // ─── Verify on startup ────────────────────────────────────
-const verifyEmailService = () => {
-  transporter.verify((error) => {
-    if (error) {
-      console.error("❌ Nodemailer failed:", error.message);
+const verifyEmailService = async () => {
+  try {
+    // Resend has no verify() — we just confirm the key is set
+    if (!process.env.RESEND_API_KEY) {
+      console.error("❌ Resend failed: RESEND_API_KEY is not set");
     } else {
-      console.log("✅ Nodemailer is ready to send emails");
+      console.log("✅ Resend is ready to send emails");
     }
-  });
+  } catch (error) {
+    console.error("❌ Resend failed:", error.message);
+  }
 };
 
 // ─── Base sender ──────────────────────────────────────────
 const sendMail = async ({ to, subject, html }) => {
-  await transporter.sendMail({
-    from: `"BHI Learning" <${process.env.EMAIL_USER}>`,
+  const { error } = await resend.emails.send({
+    from: FROM,
     to,
     subject,
     html,
   });
+
+  if (error) throw new Error(error.message);
 };
 
 // ─── Auth ─────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
 const User = require("../models/User");
-const { getRedis } = require("../config/redis");
+const { isTokenBlacklisted } = require("../utils/jwt");
 
 // ─── Verify JWT & attach user to request ─────────────────
 const protect = asyncHandler(async (req, res, next) => {
@@ -17,16 +17,9 @@ const protect = asyncHandler(async (req, res, next) => {
   }
 
   // Check if token is blacklisted (logged-out tokens)
-  try {
-    const redis = getRedis();
-    const isBlacklisted = await redis.get(`blacklist:${token}`);
-    if (isBlacklisted) {
-      res.status(401);
-      throw new Error("Token has been revoked. Please log in again.");
-    }
-  } catch (redisErr) {
-    // If Redis is down, proceed without blacklist check (fail-open for availability)
-    console.warn("Redis blacklist check failed:", redisErr.message);
+  if (isTokenBlacklisted(token)) {
+    res.status(401);
+    throw new Error("Token has been revoked. Please log in again.");
   }
 
   let decoded;

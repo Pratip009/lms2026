@@ -1,7 +1,6 @@
 const jwt = require("jsonwebtoken");
-const { getRedis } = require("../config/redis");
 const logger = require("../config/logger");
-
+const tokenBlacklist = new Set();
 const generateAccessToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || "7d",
@@ -21,17 +20,10 @@ const verifyRefreshToken = (token) => {
 /**
  * Blacklist an access token until it would naturally expire.
  */
-const blacklistToken = async (token) => {
-  try {
-    const decoded = jwt.decode(token);
-    if (!decoded?.exp) return;
-    const ttl = decoded.exp - Math.floor(Date.now() / 1000);
-    if (ttl <= 0) return;
-    const redis = getRedis();
-    await redis.setex(`blacklist:${token}`, ttl, "1");
-  } catch (err) {
-    logger.error(`blacklistToken error: ${err.message}`);
-  }
+const blacklistToken = async (token, ttl) => {
+  tokenBlacklist.add(token);
+  // Auto-remove after TTL (same behaviour as Redis SETEX)
+  setTimeout(() => tokenBlacklist.delete(token), ttl * 1000);
 };
 
 /**
@@ -56,11 +48,14 @@ const sendTokenResponse = (res, user, statusCode = 200) => {
     expiresIn: process.env.JWT_EXPIRES_IN || "7d",
   };
 };
+const isTokenBlacklisted = (token) => tokenBlacklist.has(token);
+
 
 module.exports = {
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
+  isTokenBlacklisted,
   blacklistToken,
   sendTokenResponse,
 };

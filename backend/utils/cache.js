@@ -1,14 +1,18 @@
-const { getRedis } = require("../config/redis");
 const logger = require("../config/logger");
 
 const DEFAULT_TTL = 300;
 
+const store = new Map(); // { key: { value, expiresAt } }
+
 const cacheGet = async (key) => {
   try {
-    const redis = getRedis();
-    if (!redis) return null;              // ← added
-    const value = await redis.get(key);
-    return value ? JSON.parse(value) : null;
+    const entry = store.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      store.delete(key);
+      return null;
+    }
+    return entry.value;
   } catch (err) {
     logger.warn(`Cache GET failed for key ${key}: ${err.message}`);
     return null;
@@ -17,9 +21,7 @@ const cacheGet = async (key) => {
 
 const cacheSet = async (key, value, ttl = DEFAULT_TTL) => {
   try {
-    const redis = getRedis();
-    if (!redis) return;                   // ← added
-    await redis.setex(key, ttl, JSON.stringify(value));
+    store.set(key, { value, expiresAt: Date.now() + ttl * 1000 });
   } catch (err) {
     logger.warn(`Cache SET failed for key ${key}: ${err.message}`);
   }
@@ -27,9 +29,7 @@ const cacheSet = async (key, value, ttl = DEFAULT_TTL) => {
 
 const cacheDel = async (key) => {
   try {
-    const redis = getRedis();
-    if (!redis) return;                   // ← added
-    await redis.del(key);
+    store.delete(key);
   } catch (err) {
     logger.warn(`Cache DEL failed for key ${key}: ${err.message}`);
   }
@@ -37,13 +37,15 @@ const cacheDel = async (key) => {
 
 const cacheDelPattern = async (pattern) => {
   try {
-    const redis = getRedis();
-    if (!redis) return;                   // ← added
-    const keys = await redis.keys(pattern);
-    if (keys.length > 0) {
-      await redis.del(...keys);
-      logger.debug(`Cache DEL pattern ${pattern}: removed ${keys.length} keys`);
+    const regex = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$");
+    let count = 0;
+    for (const key of store.keys()) {
+      if (regex.test(key)) {
+        store.delete(key);
+        count++;
+      }
     }
+    if (count > 0) logger.debug(`Cache DEL pattern ${pattern}: removed ${count} keys`);
   } catch (err) {
     logger.warn(`Cache DEL pattern failed: ${err.message}`);
   }
