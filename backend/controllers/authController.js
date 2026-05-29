@@ -17,15 +17,12 @@ const logger = require("../config/logger");
 const { sendOtpEmail, sendWelcomeEmail } = require("../utils/emailService");
 
 // ─── Cookie helper ────────────────────────────────────────
-// FIX: sameSite "strict" silently drops cookies on cross-domain requests
-// (Vercel frontend → Render backend). Must use "none" in production,
-// which requires secure:true (Render provides HTTPS automatically).
 const setRefreshTokenCookie = (res, token) => {
   res.cookie("refreshToken", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    maxAge: 30 * 24 * 60 * 60 * 1000,
   });
 };
 
@@ -85,8 +82,12 @@ const verifyOtp = asyncHandler(async (req, res) => {
     req.headers["user-agent"],
   );
 
-  // FIX: use helper with sameSite "none" for cross-domain (Vercel ↔ Render)
   setRefreshTokenCookie(res, refreshToken);
+
+  // ✅ Send welcome email — fire-and-forget so it never blocks the response
+  sendWelcomeEmail(user.email, user.name).catch((err) =>
+    logger.error(`Welcome email failed for ${user.email}: ${err.message}`)
+  );
 
   return successResponse(
     res,
@@ -135,7 +136,7 @@ const register = asyncHandler(async (req, res) => {
   }
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
   const user = await User.create({
     name,
@@ -200,18 +201,13 @@ const login = asyncHandler(async (req, res) => {
     req.headers["user-agent"],
   );
 
-  // FIX: use helper with sameSite "none" for cross-domain (Vercel ↔ Render)
   setRefreshTokenCookie(res, refreshToken);
 
   logger.info(`User logged in: ${user.email} (${user.role})`);
 
   return successResponse(
     res,
-    {
-      user: user.toSafeObject(),
-      accessToken,
-      sessionId,
-    },
+    { user: user.toSafeObject(), accessToken, sessionId },
     "Login successful",
   );
 });
@@ -270,7 +266,6 @@ const refreshToken = asyncHandler(async (req, res) => {
   user.refreshToken = newRefreshToken;
   await user.save({ validateBeforeSave: false });
 
-  // FIX: use helper with sameSite "none" for cross-domain (Vercel ↔ Render)
   setRefreshTokenCookie(res, newRefreshToken);
 
   return successResponse(

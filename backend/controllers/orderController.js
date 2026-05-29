@@ -5,8 +5,10 @@ const Order = require("../models/Order");
 const Enrollment = require("../models/Enrollment");
 const Progress = require("../models/Progress");
 const Lesson = require("../models/Lesson");
-const { successResponse, createdResponse } = require("../utils/response");
+const User = require("../models/User");
+const { successResponse } = require("../utils/response");
 const logger = require("../config/logger");
+const { sendPaymentSuccessEmail } = require("../utils/emailService");
 
 // ─── Helper: initialize Progress after enrollment ─────────
 const initializeProgress = async (studentId, courseId, enrollmentId) => {
@@ -17,7 +19,7 @@ const initializeProgress = async (studentId, courseId, enrollmentId) => {
 
   const lessonProgress = lessons.map((lesson, index) => ({
     lesson: lesson._id,
-    isUnlocked: index === 0, // first lesson always unlocked
+    isUnlocked: index === 0,
     isWatched: false,
     examPassed: false,
     examScore: 0,
@@ -53,7 +55,6 @@ const createCheckoutSession = asyncHandler(async (req, res) => {
     throw new Error("Course not found.");
   }
 
-  // Check if already enrolled
   const existingEnrollment = await Enrollment.findOne({
     student: req.user._id,
     course: courseId,
@@ -64,14 +65,12 @@ const createCheckoutSession = asyncHandler(async (req, res) => {
     throw new Error("You are already enrolled in this course.");
   }
 
-  // Check for existing pending order
   const existingOrder = await Order.findOne({
     student: req.user._id,
     course: courseId,
     status: "pending",
   });
   if (existingOrder?.stripeSessionId) {
-    // Return existing session if still valid
     try {
       const existingSession = await stripe.checkout.sessions.retrieve(
         existingOrder.stripeSessionId,
@@ -90,7 +89,6 @@ const createCheckoutSession = asyncHandler(async (req, res) => {
   const effectivePrice =
     course.discountPrice > 0 ? course.discountPrice : course.price;
 
-  // Create Stripe checkout session
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
     mode: "payment",
@@ -107,7 +105,7 @@ const createCheckoutSession = asyncHandler(async (req, res) => {
             images: course.thumbnail?.url ? [course.thumbnail.url] : [],
             metadata: { courseId: course._id.toString() },
           },
-          unit_amount: Math.round(effectivePrice * 100), // cents
+          unit_amount: Math.round(effectivePrice * 100),
         },
         quantity: 1,
       },
@@ -118,10 +116,9 @@ const createCheckoutSession = asyncHandler(async (req, res) => {
     },
     success_url: `${process.env.CLIENT_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.CLIENT_URL}/courses/${course._id}?payment=cancelled`,
-    expires_at: Math.floor(Date.now() / 1000) + 30 * 60, // 30 min
+    expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
   });
 
-  // Save pending order
   await Order.findOneAndUpdate(
     { student: req.user._id, course: courseId, status: "pending" },
     {
@@ -193,7 +190,7 @@ const getMyOrders = asyncHandler(async (req, res) => {
 // ─── @route   GET /api/orders
 // ─── @access  Admin
 const getAllOrders = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 20, status, search } = req.query;
+  const { page = 1, limit = 20, status } = req.query;
   const query = {};
   if (status) query.status = status;
 
@@ -278,7 +275,7 @@ const handlePaymentSuccess = async (session) => {
   try {
     const { courseId, studentId } = session.metadata;
 
-    // Update order
+    // Update order to completed
     const order = await Order.findOneAndUpdate(
       { stripeSessionId: session.id },
       {
@@ -297,7 +294,7 @@ const handlePaymentSuccess = async (session) => {
       return;
     }
 
-    // Create enrollment
+    // Create or update enrollment
     const enrollment = await Enrollment.findOneAndUpdate(
       { student: studentId, course: courseId },
       {
@@ -319,6 +316,30 @@ const handlePaymentSuccess = async (session) => {
     logger.info(
       `Payment success: student=${studentId} course=${courseId} order=${order._id}`,
     );
+
+    // ✅ Send payment confirmation email — fetch student + course details
+    try {
+      const [student, course] = await Promise.all([
+        User.findById(studentId).select("name email").lean(),
+        Course.findById(courseId).select("title").lean(),
+      ]);
+
+      if (student && course) {
+        await sendPaymentSuccessEmail(student.email, {
+          name: student.name,
+          amount: order.amount,
+          courseName: course.title,
+        });
+      } else {
+        logger.warn(
+          `Payment email skipped: student or course not found (studentId=${studentId}, courseId=${courseId})`,
+        );
+      }
+    } catch (emailErr) {
+      // Email failure must never roll back a successful payment
+      logger.error(`Payment email failed for student=${studentId}: ${emailErr.message}`);
+    }
+
   } catch (err) {
     logger.error(`handlePaymentSuccess error: ${err.message}`);
   }

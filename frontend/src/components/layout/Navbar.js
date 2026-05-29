@@ -78,9 +78,7 @@ const styles = `
   .nav-links {
     display: flex; align-items: center; gap: 2px;
     position: absolute; left: 50%; transform: translateX(-50%);
-    background: rgba(248,250,252,0.70);
-    border: 1px solid rgba(37,99,235,0.08);
-    border-radius: 14px; padding: 4px;
+    
     backdrop-filter: blur(12px);
   }
   .nav-link {
@@ -94,7 +92,7 @@ const styles = `
   .nav-link:hover { color: var(--ink); background: white; text-decoration: none; }
   .nav-link.active {
     color: var(--b700); background: white;
-    box-shadow: 0 1px 6px rgba(37,99,235,0.12), 0 0 0 1px rgba(37,99,235,0.10);
+   
     font-weight: 600;
   }
 
