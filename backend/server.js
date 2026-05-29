@@ -30,7 +30,7 @@ const progressRoutes = require("./routes/progressRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const webhookRoutes = require("./routes/webhookRoutes");
 const lessonChatRoutes = require("./routes/Lessonchatroutes.js");
-
+const certificateRoutes = require("./routes/certificateRoutes");
 const app = express();
 app.set("trust proxy", 1);
 
@@ -147,6 +147,7 @@ app.use("/api/enrollments", enrollmentRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/certificates", certificateRoutes);
 
 // Chat gets its own limiter
 app.use(

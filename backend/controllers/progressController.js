@@ -148,11 +148,41 @@ const markLessonWatched = asyncHandler(async (req, res) => {
     progress.recalculate();
   }
 
-  await progress.save();
+ await progress.save();
+
+  // ── Auto-generate certificate on 100% completion ──────
+  if (progress.progressPercentage === 100) {
+    try {
+      const Certificate = require("../models/Certificate");
+      const Course = require("../models/Course");
+      const { v4: uuidv4 } = require("uuid");
+
+      const alreadyIssued = await Certificate.findOne({
+        student: req.user._id,
+        course: courseId,
+      });
+
+      if (!alreadyIssued) {
+        const course = await Course.findById(courseId).select("title").lean();
+        await Certificate.create({
+          student: req.user._id,
+          course: courseId,
+          studentName: req.user.name,
+          courseName: course?.title || "Unknown Course",
+          percentage: 100,
+          certificateId: `BHI-${uuidv4().slice(0, 8).toUpperCase()}`,
+        });
+      }
+    } catch (certErr) {
+      // Non-blocking — don't fail the progress update if cert generation errors
+      console.error("Certificate generation error:", certErr.message);
+    }
+  }
 
   return successResponse(res, {
     progressPercentage: progress.progressPercentage,
     completedLessons: progress.completedLessons,
+    courseCompleted: progress.progressPercentage === 100,
   }, "Lesson marked as watched");
 });
 

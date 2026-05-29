@@ -4,6 +4,8 @@ import { useSelector } from "react-redux";
 import api from "../../services/api";
 import { LoadingCenter } from "../../components/common";
 import LessonChat from "./Lessonchat";
+import {useCertificate} from "../../components/useCertificate";
+import CertificateModal from "../../components/CertificateModal";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
@@ -20,6 +22,7 @@ const styles = `
     --green:#16a34a; --green-lt:#f0fdf4; --green-mid:#bbf7d0;
     --amber:#d97706; --amber-lt:#fffbeb; --amber-mid:#fde68a;
     --rose:#e11d48; --rose-lt:#fff1f2; --rose-mid:#fecdd3;
+    --gold:#C9A84C; --gold-lt:rgba(201,168,76,0.12); --gold-mid:rgba(201,168,76,0.3);
     --font-display:'Syne',sans-serif; --font-body:'DM Sans',sans-serif;
     --r:10px; --r-lg:16px; --r-xl:22px;
     --sidebar-w: 272px;
@@ -35,6 +38,8 @@ const styles = `
   @keyframes slideLeft { from{transform:translateX(-100%)} to{transform:translateX(0)} }
   @keyframes overlayIn { from{opacity:0} to{opacity:1} }
   @keyframes pulse     { 0%,100%{opacity:1} 50%{opacity:.5} }
+  @keyframes certPop   { 0%{opacity:0;transform:scale(0.88) translateY(20px)} 60%{transform:scale(1.03) translateY(-2px)} 100%{opacity:1;transform:scale(1) translateY(0)} }
+  @keyframes certGlow  { 0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,0)} 50%{box-shadow:0 0 32px 8px rgba(201,168,76,0.25)} }
 
   /* ══ ROOT SHELL ══ */
   .vp-root {
@@ -48,8 +53,6 @@ const styles = `
     position: relative;
     overflow: hidden;
   }
-
-  /* Subtle dot grid */
   .vp-root::before {
     content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
     background-image:radial-gradient(circle,rgba(37,99,235,0.035) 1px,transparent 1px);
@@ -126,10 +129,15 @@ const styles = `
     height: 100%; background: linear-gradient(90deg, var(--b400), var(--b300));
     border-radius: 100px; transition: width .5s ease;
   }
+  .vp-prog-pill-fill.complete {
+    background: linear-gradient(90deg, var(--gold), #e8c96a);
+    animation: certGlow 1.8s ease-in-out 3;
+  }
   .vp-prog-pill-label {
     font-size: 10.5px; font-weight: 800; color: var(--b300);
     font-family: var(--font-display); white-space: nowrap;
   }
+  .vp-prog-pill-label.complete { color: var(--gold); }
 
   .vp-topstrip-badge {
     display: inline-flex; align-items: center; gap: 4px;
@@ -139,14 +147,16 @@ const styles = `
   }
   .vp-badge-watched { background: rgba(217,119,6,0.2); color: #fbbf24; border: 1px solid rgba(217,119,6,0.3); }
   .vp-badge-passed  { background: rgba(22,163,74,0.2); color: #4ade80; border: 1px solid rgba(22,163,74,0.3); }
+  .vp-badge-cert    { background: rgba(201,168,76,0.2); color: var(--gold); border: 1px solid rgba(201,168,76,0.35); cursor: pointer; transition: background .15s; }
+  .vp-badge-cert:hover { background: rgba(201,168,76,0.32); }
 
-  /* ══ BODY: sidebar + main ══ */
+  /* ══ BODY ══ */
   .vp-body {
     flex: 1; display: flex; overflow: hidden; position: relative; z-index: 1;
     height: calc(100vh - var(--topbar-h) - 52px);
   }
 
-  /* ══ COLLAPSIBLE SIDEBAR ══ */
+  /* ══ SIDEBAR ══ */
   .vp-sidebar {
     width: var(--sidebar-w); flex-shrink: 0;
     background: var(--white); border-right: 1px solid var(--border);
@@ -155,9 +165,7 @@ const styles = `
     position: relative; z-index: 2;
     min-width: var(--sidebar-w);
   }
-  .vp-sidebar.collapsed {
-    width: 0; min-width: 0; border-right: none;
-  }
+  .vp-sidebar.collapsed { width: 0; min-width: 0; border-right: none; }
 
   .vp-sidebar-top {
     padding: 20px 18px 16px;
@@ -185,10 +193,15 @@ const styles = `
     margin-bottom: 8px; display:flex; justify-content:space-between; position: relative;
   }
   .vp-sidebar-prog-label em { font-style:normal; color: var(--b400); }
+  .vp-sidebar-prog-label em.complete { color: var(--gold); }
+
   .vp-sidebar-prog-track { height:4px; background:rgba(255,255,255,0.12); border-radius:100px; overflow:hidden; position: relative; }
   .vp-sidebar-prog-fill {
     height:100%; background:linear-gradient(90deg,var(--b400),var(--b300));
     border-radius:100px; transition:width .5s ease; position:relative;
+  }
+  .vp-sidebar-prog-fill.complete {
+    background: linear-gradient(90deg, var(--gold), #e8c96a);
   }
   .vp-sidebar-prog-fill::after {
     content:''; position:absolute; top:0; left:-100%; width:50%; height:100%;
@@ -213,6 +226,20 @@ const styles = `
     font-family: var(--font-display);
   }
 
+  /* Certificate button inside sidebar */
+  .vp-sidebar-cert-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-top: 12px; padding: 9px 14px; border-radius: 10px;
+    background: linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.08));
+    border: 1px solid rgba(201,168,76,0.35);
+    cursor: pointer; width: 100%; position: relative;
+    font-family: var(--font-display); font-size: 10.5px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--gold);
+    transition: all .18s; animation: certPop .5s ease both;
+  }
+  .vp-sidebar-cert-btn:hover { background: linear-gradient(135deg, rgba(201,168,76,0.28), rgba(201,168,76,0.14)); transform: translateY(-1px); }
+  .vp-sidebar-cert-btn-icon { font-size: 16px; }
+
   .vp-list-label {
     padding: 11px 18px 4px;
     font-size: 9px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase;
@@ -233,9 +260,7 @@ const styles = `
     border-left: 3px solid transparent; position: relative;
   }
   .vp-lesson-item:hover:not(.locked) { background: var(--surface); }
-  .vp-lesson-item.active {
-    background: var(--b50); border-left-color: var(--b600);
-  }
+  .vp-lesson-item.active { background: var(--b50); border-left-color: var(--b600); }
   .vp-lesson-item.locked { cursor: not-allowed; opacity: .38; }
 
   .vp-lesson-num {
@@ -265,14 +290,9 @@ const styles = `
   .vp-lesson-sub.seen { color: var(--amber); }
 
   /* ══ MAIN AREA ══ */
-  .vp-main {
-    flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden;
-  }
+  .vp-main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
 
-  /* ══ CONTENT ROW: video + chat side by side ══ */
-  .vp-content-row {
-    flex: 1; display: flex; overflow: hidden; gap: 0;
-  }
+  .vp-content-row { flex: 1; display: flex; overflow: hidden; gap: 0; }
 
   /* ── Video Panel ── */
   .vp-video-panel {
@@ -313,7 +333,44 @@ const styles = `
   .vp-badge-watched { background: var(--amber-lt); color: var(--amber); border: 1px solid var(--amber-mid); }
   .vp-badge-passed  { background: var(--green-lt); color: var(--green); border: 1px solid var(--green-mid); }
 
-  /* Video area - scrollable */
+  /* ── Completion Banner ── */
+  .vp-completion-banner {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+    background: linear-gradient(135deg, #0d1b2a 0%, #1a2744 100%);
+    border: 1px solid rgba(201,168,76,0.35);
+    border-radius: var(--r-lg);
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    animation: certPop .5s ease both;
+    position: relative; overflow: hidden;
+  }
+  .vp-completion-banner::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 0% 50%, rgba(201,168,76,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .vp-completion-banner-left { display: flex; align-items: center; gap: 12px; }
+  .vp-completion-banner-icon { font-size: 28px; flex-shrink: 0; }
+  .vp-completion-banner-title {
+    font-family: var(--font-display); font-size: 14px; font-weight: 800;
+    color: var(--gold); letter-spacing: .02em; margin-bottom: 2px;
+  }
+  .vp-completion-banner-sub {
+    font-size: 11.5px; color: rgba(255,255,255,0.5);
+  }
+  .vp-completion-banner-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; border-radius: var(--r);
+    background: var(--gold); color: #0d1b2a;
+    font-family: var(--font-display); font-size: 11px; font-weight: 800;
+    letter-spacing: .06em; text-transform: uppercase;
+    cursor: pointer; border: none; transition: all .15s; flex-shrink: 0;
+    box-shadow: 0 4px 16px rgba(201,168,76,0.3);
+  }
+  .vp-completion-banner-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(201,168,76,0.4); }
+
+  /* Video area */
   .vp-video-body {
     flex: 1; overflow-y: auto; padding: 16px 20px 20px;
     scrollbar-width: thin; scrollbar-color: var(--border) transparent;
@@ -352,7 +409,6 @@ const styles = `
     border-radius:50%; animation:spin .75s linear infinite;
   }
 
-  /* Actions row */
   .vp-actions {
     display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px;
     animation: fadeUp .4s ease both .1s;
@@ -387,8 +443,12 @@ const styles = `
     background: transparent; color: var(--ink-3); border: 1px solid var(--border);
   }
   .vp-btn-ghost:hover { background:var(--white); border-color:var(--border-2); }
+  .vp-btn-cert {
+    background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.08));
+    color: var(--gold); border: 1px solid rgba(201,168,76,0.4);
+  }
+  .vp-btn-cert:hover { background: rgba(201,168,76,0.22); }
 
-  /* About card */
   .vp-about-card {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--r-lg); padding: 18px 20px; margin-top: 16px;
@@ -406,7 +466,6 @@ const styles = `
   .vp-about-card p { color:var(--ink-2); line-height:1.8; font-size:13px; }
   .vp-hr { border:none; border-top:1px solid var(--border); margin:14px 0; }
 
-  /* Alert */
   .vp-alert {
     display:flex; align-items:center; gap:8px;
     background:var(--rose-lt); border:1px solid var(--rose-mid);
@@ -414,28 +473,30 @@ const styles = `
     padding:10px 14px; font-size:12px; margin-bottom:14px;
     animation:fadeIn .3s ease;
   }
-.lc-emoji-picker {
-  position: absolute; bottom: 56px; left: 0;
-  background: var(--c-surface); border: 1px solid var(--c-border2);
-  border-radius: var(--r-lg); padding: 10px;
-  box-shadow: 0 8px 32px rgba(15,23,42,0.15);
-  z-index: 50; width: 300px;
-  animation: lc-fadeUp .18s ease both;
-}
-.lc-emoji-cats { display: flex; gap: 2px; margin-bottom: 8px; border-bottom: 1px solid var(--c-border); padding-bottom: 8px; }
-.lc-emoji-cat-btn { flex: 1; padding: 5px; border: none; background: none; cursor: pointer; font-size: 15px; border-radius: var(--r-sm); transition: background .12s; }
-.lc-emoji-cat-btn:hover, .lc-emoji-cat-btn.active { background: var(--c-surface2); }
-.lc-emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; max-height: 180px; overflow-y: auto; scrollbar-width: thin; }
-.lc-emoji-btn { border: none; background: none; cursor: pointer; font-size: 20px; padding: 4px; border-radius: 6px; transition: background .1s; text-align: center; line-height: 1.4; }
-.lc-emoji-btn:hover { background: var(--c-surface2); }
+
+  .lc-emoji-picker {
+    position: absolute; bottom: 56px; left: 0;
+    background: var(--c-surface); border: 1px solid var(--c-border2);
+    border-radius: var(--r-lg); padding: 10px;
+    box-shadow: 0 8px 32px rgba(15,23,42,0.15);
+    z-index: 50; width: 300px;
+    animation: lc-fadeUp .18s ease both;
+  }
+  .lc-emoji-cats { display: flex; gap: 2px; margin-bottom: 8px; border-bottom: 1px solid var(--c-border); padding-bottom: 8px; }
+  .lc-emoji-cat-btn { flex: 1; padding: 5px; border: none; background: none; cursor: pointer; font-size: 15px; border-radius: var(--r-sm); transition: background .12s; }
+  .lc-emoji-cat-btn:hover, .lc-emoji-cat-btn.active { background: var(--c-surface2); }
+  .lc-emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; max-height: 180px; overflow-y: auto; scrollbar-width: thin; }
+  .lc-emoji-btn { border: none; background: none; cursor: pointer; font-size: 20px; padding: 4px; border-radius: 6px; transition: background .1s; text-align: center; line-height: 1.4; }
+  .lc-emoji-btn:hover { background: var(--c-surface2); }
+
   /* ── Chat Panel ── */
   .vp-chat-panel {
-  flex: 1; min-width: 0; display: flex; flex-direction: column;
-  overflow: hidden;
-  background: var(--white);
-  height: calc(100vh - var(--topbar-h) - 52px);
-  max-height: calc(100vh - var(--topbar-h) - 52px);
-}
+    flex: 1; min-width: 0; display: flex; flex-direction: column;
+    overflow: hidden;
+    background: var(--white);
+    height: calc(100vh - var(--topbar-h) - 52px);
+    max-height: calc(100vh - var(--topbar-h) - 52px);
+  }
 
   /* ══ MOBILE OVERLAY ══ */
   .vp-overlay {
@@ -447,18 +508,14 @@ const styles = `
   }
   .vp-overlay.open { display: block; }
 
-  /* ══ TABLET ≤ 1024px ══ */
   @media (max-width: 1024px) {
     :root { --sidebar-w: 248px; }
     .vp-video-panel { flex: 0 0 54%; }
     .vp-topstrip-title { max-width: 260px; }
   }
 
-  /* ══ TABLET/MOBILE ≤ 820px: stack video+chat vertically ══ */
   @media (max-width: 820px) {
     .vp-body { height: auto; flex-direction: column; overflow: visible; }
-
-    /* Sidebar becomes drawer */
     .vp-sidebar {
       position: fixed; top: 0; left: 0; bottom: 0;
       z-index: 300; width: 288px !important; min-width: 288px !important;
@@ -466,20 +523,15 @@ const styles = `
       box-shadow: 4px 0 32px rgba(5,15,43,0.28);
       transition: transform .25s ease;
     }
-    .vp-sidebar.open-mobile {
-      transform: translateX(0);
-    }
+    .vp-sidebar.open-mobile { transform: translateX(0); }
     .vp-sidebar.collapsed { width: 288px !important; min-width: 288px !important; }
-
     .vp-overlay { display: block; }
     .vp-overlay:not(.open) { display: none; }
-
     .vp-content-row { flex-direction: column; overflow: visible; height: auto; }
     .vp-video-panel  { flex: none; border-right: none; border-bottom: 1px solid var(--border); height: auto; }
     .vp-chat-panel   { flex: none; height: 520px; }
     .vp-video-body   { overflow: visible; }
     .vp-main { overflow: auto; }
-
     .vp-prog-pill { display: none; }
     .vp-topstrip-title { max-width: 180px; }
   }
@@ -504,12 +556,14 @@ const styles = `
 `;
 
 export default function VideoPlayer() {
+  const { certificate, showModal, triggerCertificate, closeModal } = useCertificate();
   const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
   const iframeRef = useRef(null);
 
   const [lesson, setLesson] = useState(null);
   const [lessons, setLessons] = useState([]);
+  const [course, setCourse] = useState(null);
   const [otpData, setOtpData] = useState(null);
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -519,10 +573,11 @@ export default function VideoPlayer() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  // Track if we've already triggered the cert for this session to avoid re-firing
+  const certTriggeredRef = useRef(false);
 
   const currentUser = useSelector((s) => s.auth.user);
 
-  // Detect mobile
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 820);
     check();
@@ -530,47 +585,41 @@ export default function VideoPlayer() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Close mobile sidebar on route change
   useEffect(() => {
     setMobileSidebarOpen(false);
   }, [lessonId]);
 
-  // ESC key closes mobile sidebar
   useEffect(() => {
-    const handler = (e) => {
-      if (e.key === "Escape") setMobileSidebarOpen(false);
-    };
+    const handler = (e) => { if (e.key === "Escape") setMobileSidebarOpen(false); };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
-  // Body scroll lock for mobile
   useEffect(() => {
     document.body.style.overflow = mobileSidebarOpen ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, [mobileSidebarOpen]);
 
+  // ── Load lesson, lessons list, progress, and course title ──
   useEffect(() => {
     setLoading(true);
     setError("");
     setOtpData(null);
+    certTriggeredRef.current = false;
+
     Promise.all([
       api.get(`/lessons/${lessonId}`),
       api.get(`/courses/${courseId}/lessons`),
-      api
-        .get(`/progress/${courseId}`)
-        .catch(() => ({ data: { data: { progress: null } } })),
+      api.get(`/progress/${courseId}`).catch(() => ({ data: { data: { progress: null } } })),
+      api.get(`/courses/${courseId}`).catch(() => ({ data: { data: { course: null } } })),
     ])
-      .then(([l, ll, p]) => {
+      .then(([l, ll, p, c]) => {
         setLesson(l.data.data?.lesson || l.data.lesson);
         setLessons(ll.data.data?.lessons || ll.data.lessons || []);
         setProgress(p.data.data?.progress || p.data.progress);
+        setCourse(c.data.data?.course || c.data.course);
       })
-      .catch((err) =>
-        setError(err.response?.data?.message || "Failed to load lesson"),
-      )
+      .catch((err) => setError(err.response?.data?.message || "Failed to load lesson"))
       .finally(() => setLoading(false));
   }, [courseId, lessonId]);
 
@@ -581,21 +630,11 @@ export default function VideoPlayer() {
     api
       .get(`/lessons/${lessonId}/video-otp`)
       .then((r) => setOtpData(r.data.data || r.data))
-      .catch((err) =>
-        setError(err.response?.data?.message || "Failed to load video"),
-      )
+      .catch((err) => setError(err.response?.data?.message || "Failed to load video"))
       .finally(() => setVideoLoading(false));
   }, [lesson, lessonId]);
 
-  const handleMarkWatched = async () => {
-    try {
-      await api.post(`/progress/${courseId}/lessons/${lessonId}/watch`);
-      setWatched(true);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
+  // ── Derived state ──
   const getLessonProgress = (lid) =>
     progress?.lessons?.find((l) => l.lesson?._id === lid || l.lesson === lid);
 
@@ -603,45 +642,74 @@ export default function VideoPlayer() {
   const nextLesson = lessons[currentIndex + 1];
   const prevLesson = lessons[currentIndex - 1];
   const currentLessonProgress = getLessonProgress(lessonId);
-  const isUserAdmin =
-    currentUser?.role === "admin" || currentUser?.role === "instructor";
+  const isUserAdmin = currentUser?.role === "admin" || currentUser?.role === "instructor";
   const isWatched = isUserAdmin || watched || currentLessonProgress?.isWatched;
   const isPassed = isUserAdmin || currentLessonProgress?.examPassed;
-  const completedCount =
-    progress?.lessons?.filter((l) => l.examPassed).length || 0;
+
+  const completedCount = progress?.lessons?.filter((l) => l.examPassed).length || 0;
   const progressPct =
-    lessons.length > 0
-      ? Math.round((completedCount / lessons.length) * 100)
-      : 0;
+    lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0;
+
+  // ── Course completion: check after progress loads ──
+  // Also fires when ExamPage navigates back here after passing the final exam.
+  useEffect(() => {
+    if (
+      progressPct === 100 &&
+      lessons.length > 0 &&
+      currentUser &&
+      course &&
+      !certTriggeredRef.current
+    ) {
+      certTriggeredRef.current = true;
+      triggerCertificate({
+        courseId,
+        studentName: currentUser.name,
+        courseName: course.title,
+        percentage: 100,
+      });
+    }
+  }, [progressPct, lessons.length, currentUser, course, courseId, triggerCertificate]);
+
+  // ── Mark lesson watched ──
+  const handleMarkWatched = async () => {
+    try {
+      const res = await api.post(`/progress/${courseId}/lessons/${lessonId}/watch`);
+      setWatched(true);
+
+      // Refresh progress so completion check runs
+      const p = await api.get(`/progress/${courseId}`).catch(() => null);
+      if (p) setProgress(p.data.data?.progress || p.data.progress);
+    } catch (err) {
+      console.error("Mark watched error:", err);
+    }
+  };
 
   if (loading) return <LoadingCenter />;
 
   const handleSidebarToggle = () => {
-    if (isMobile) {
-      setMobileSidebarOpen((v) => !v);
-    } else {
-      setSidebarCollapsed((v) => !v);
-    }
+    if (isMobile) setMobileSidebarOpen((v) => !v);
+    else setSidebarCollapsed((v) => !v);
   };
 
   const sidebarCls = [
     "vp-sidebar",
     !isMobile && sidebarCollapsed ? "collapsed" : "",
     isMobile && mobileSidebarOpen ? "open-mobile" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  ].filter(Boolean).join(" ");
 
+  const isComplete = progressPct === 100 && lessons.length > 0;
+
+  // ── Sidebar content ──
   const SidebarContent = (
     <>
       <div className="vp-sidebar-top">
         <div className="vp-sidebar-prog-label">
           <span>Progress</span>
-          <em>{progressPct}%</em>
+          <em className={isComplete ? "complete" : ""}>{progressPct}%</em>
         </div>
         <div className="vp-sidebar-prog-track">
           <div
-            className="vp-sidebar-prog-fill"
+            className={`vp-sidebar-prog-fill${isComplete ? " complete" : ""}`}
             style={{ width: `${progressPct}%` }}
           />
         </div>
@@ -655,12 +723,26 @@ export default function VideoPlayer() {
             <div className="vp-sidebar-stat-label">Total</div>
           </div>
           <div className="vp-sidebar-stat">
-            <div className="vp-sidebar-stat-val">
-              {lessons.length - completedCount}
-            </div>
+            <div className="vp-sidebar-stat-val">{lessons.length - completedCount}</div>
             <div className="vp-sidebar-stat-label">Left</div>
           </div>
         </div>
+
+        {/* Certificate button — only shown when course is complete */}
+        {isComplete && certificate && (
+          <button
+            className="vp-sidebar-cert-btn"
+            onClick={() => triggerCertificate({
+              courseId,
+              studentName: currentUser?.name,
+              courseName: course?.title,
+              percentage: 100,
+            })}
+          >
+            <span className="vp-sidebar-cert-btn-icon">🎓</span>
+            View Certificate
+          </button>
+        )}
       </div>
 
       <div className="vp-list-label">Lessons · {lessons.length}</div>
@@ -669,24 +751,11 @@ export default function VideoPlayer() {
         {lessons.map((l, i) => {
           const lp = getLessonProgress(l._id);
           const isActive = l._id === lessonId;
-          const isAdmin =
-            currentUser?.role === "admin" || currentUser?.role === "instructor";
+          const isAdmin = currentUser?.role === "admin" || currentUser?.role === "instructor";
           const isLocked = !isAdmin && !l.isFreePreview && !lp?.isUnlocked;
           const dotClass = lp?.examPassed ? "ok" : lp?.isWatched ? "seen" : "";
-          const icon = lp?.examPassed
-            ? "✓"
-            : lp?.isWatched
-              ? "◉"
-              : isLocked
-                ? "⊘"
-                : "▷";
-          const subLabel = lp?.examPassed
-            ? "Passed"
-            : lp?.isWatched
-              ? "Watched"
-              : isLocked
-                ? "Locked"
-                : "Available";
+          const icon = lp?.examPassed ? "✓" : lp?.isWatched ? "◉" : isLocked ? "⊘" : "▷";
+          const subLabel = lp?.examPassed ? "Passed" : lp?.isWatched ? "Watched" : isLocked ? "Locked" : "Available";
           return (
             <div
               key={l._id}
@@ -715,17 +784,15 @@ export default function VideoPlayer() {
     <>
       <style>{styles}</style>
       <div className="vp-root">
+
         {/* ── Top strip ── */}
         <div className="vp-topstrip">
           <button
             className="vp-toggle-sidebar-btn"
             onClick={handleSidebarToggle}
-            aria-label={
-              sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
-            }
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={sidebarCollapsed ? "Show lessons" : "Hide lessons"}
           >
-            {/* Hamburger / panel icon */}
             <svg viewBox="0 0 16 16">
               {sidebarCollapsed || (isMobile && !mobileSidebarOpen) ? (
                 <path d="M2 4h12v1.5H2V4zm0 3.25h12v1.5H2v-1.5zm0 3.25h12v1.5H2v-1.5z" />
@@ -749,26 +816,40 @@ export default function VideoPlayer() {
             <div className="vp-prog-pill">
               <div className="vp-prog-pill-track">
                 <div
-                  className="vp-prog-pill-fill"
+                  className={`vp-prog-pill-fill${isComplete ? " complete" : ""}`}
                   style={{ width: `${progressPct}%` }}
                 />
               </div>
-              <span className="vp-prog-pill-label">{progressPct}% done</span>
-            </div>
-            {isWatched && !isPassed && (
-              <span className="vp-topstrip-badge vp-badge-watched">
-                Watched
+              <span className={`vp-prog-pill-label${isComplete ? " complete" : ""}`}>
+                {isComplete ? "🎓 Complete!" : `${progressPct}% done`}
               </span>
+            </div>
+
+            {/* Certificate badge in topstrip when complete */}
+            {isComplete && certificate && (
+              <button
+                className="vp-topstrip-badge vp-badge-cert"
+                onClick={() => triggerCertificate({
+                  courseId,
+                  studentName: currentUser?.name,
+                  courseName: course?.title,
+                  percentage: 100,
+                })}
+              >
+                🎓 Certificate
+              </button>
+            )}
+
+            {isWatched && !isPassed && (
+              <span className="vp-topstrip-badge vp-badge-watched">Watched</span>
             )}
             {isPassed && (
-              <span className="vp-topstrip-badge vp-badge-passed">
-                ✓ Passed
-              </span>
+              <span className="vp-topstrip-badge vp-badge-passed">✓ Passed</span>
             )}
           </div>
         </div>
 
-        {/* ── Overlay for mobile drawer ── */}
+        {/* ── Mobile overlay ── */}
         <div
           className={`vp-overlay${mobileSidebarOpen ? " open" : ""}`}
           onClick={() => setMobileSidebarOpen(false)}
@@ -776,12 +857,11 @@ export default function VideoPlayer() {
 
         {/* ── Body ── */}
         <div className="vp-body">
-          {/* Sidebar */}
           <div className={sidebarCls}>{SidebarContent}</div>
 
-          {/* Main */}
           <div className="vp-main">
             <div className="vp-content-row">
+
               {/* ── Video Panel ── */}
               <div className="vp-video-panel">
                 <div className="vp-video-header">
@@ -791,9 +871,7 @@ export default function VideoPlayer() {
                       <span className="vp-crumb-sep">›</span>
                       <span>Lesson {currentIndex + 1}</span>
                       <span className="vp-crumb-sep">›</span>
-                      <span style={{ color: "var(--ink-2)" }}>
-                        {lesson?.title}
-                      </span>
+                      <span style={{ color: "var(--ink-2)" }}>{lesson?.title}</span>
                     </div>
                     <h1 className="vp-title">{lesson?.title}</h1>
                   </div>
@@ -809,8 +887,37 @@ export default function VideoPlayer() {
 
                 <div className="vp-video-body">
                   {error && (
-                    <div className="vp-alert">
-                      <span>⚠</span> {error}
+                    <div className="vp-alert"><span>⚠</span> {error}</div>
+                  )}
+
+                  {/* ── Course completion banner ── */}
+                  {isComplete && (
+                    <div className="vp-completion-banner">
+                      <div className="vp-completion-banner-left">
+                        <span className="vp-completion-banner-icon">🏆</span>
+                        <div>
+                          <div className="vp-completion-banner-title">
+                            Course Complete — Congratulations!
+                          </div>
+                          <div className="vp-completion-banner-sub">
+                            You've passed all lessons in{" "}
+                            <strong style={{ color: "rgba(255,255,255,0.75)" }}>
+                              {course?.title}
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        className="vp-completion-banner-btn"
+                        onClick={() => triggerCertificate({
+                          courseId,
+                          studentName: currentUser?.name,
+                          courseName: course?.title,
+                          percentage: 100,
+                        })}
+                      >
+                        🎓 View Certificate
+                      </button>
                     </div>
                   )}
 
@@ -836,9 +943,7 @@ export default function VideoPlayer() {
                           <>
                             <div className="vp-ph-icon">🎬</div>
                             <span className="vp-ph-text">
-                              {error
-                                ? "Video unavailable"
-                                : "No video attached"}
+                              {error ? "Video unavailable" : "No video attached"}
                             </span>
                           </>
                         )}
@@ -850,11 +955,7 @@ export default function VideoPlayer() {
                     {prevLesson && (
                       <button
                         className="vp-btn vp-btn-ghost"
-                        onClick={() =>
-                          navigate(
-                            `/learn/${courseId}/lesson/${prevLesson._id}`,
-                          )
-                        }
+                        onClick={() => navigate(`/learn/${courseId}/lesson/${prevLesson._id}`)}
                       >
                         ← Prev
                       </button>
@@ -870,9 +971,7 @@ export default function VideoPlayer() {
                     {isWatched && !isPassed && (
                       <button
                         className="vp-btn vp-btn-primary"
-                        onClick={() =>
-                          navigate(`/learn/${courseId}/lesson/${lessonId}/exam`)
-                        }
+                        onClick={() => navigate(`/learn/${courseId}/lesson/${lessonId}/exam`)}
                       >
                         Take Exam →
                       </button>
@@ -880,13 +979,22 @@ export default function VideoPlayer() {
                     {isPassed && nextLesson && (
                       <button
                         className="vp-btn vp-btn-success"
-                        onClick={() =>
-                          navigate(
-                            `/learn/${courseId}/lesson/${nextLesson._id}`,
-                          )
-                        }
+                        onClick={() => navigate(`/learn/${courseId}/lesson/${nextLesson._id}`)}
                       >
                         Next Lesson →
+                      </button>
+                    )}
+                    {isComplete && certificate && (
+                      <button
+                        className="vp-btn vp-btn-cert"
+                        onClick={() => triggerCertificate({
+                          courseId,
+                          studentName: currentUser?.name,
+                          courseName: course?.title,
+                          percentage: 100,
+                        })}
+                      >
+                        🎓 View Certificate
                       </button>
                     )}
                   </div>
@@ -917,6 +1025,11 @@ export default function VideoPlayer() {
           </div>
         </div>
       </div>
+
+      {/* ── Certificate Modal (renders on top of everything) ── */}
+      {showModal && certificate && (
+        <CertificateModal certificate={certificate} onClose={closeModal} />
+      )}
     </>
   );
 }

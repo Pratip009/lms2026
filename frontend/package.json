@@ -7,6 +7,8 @@
     "ajv": "^8.18.0",
     "ajv-keywords": "^5.1.0",
     "axios": "^1.6.5",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-redux": "^9.1.0",

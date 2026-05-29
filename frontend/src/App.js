@@ -25,6 +25,7 @@ import VideoPlayer from "./pages/student/VideoPlayer";
 import ExamPage from "./pages/student/ExamPage";
 import AttendancePage from "./pages/student/AttendancePage";
 import Profile from "./pages/student/Profile";
+import MyCertificatesPage from "./pages/MyCertificatesPage";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -103,6 +104,7 @@ function App() {
             />
             <Route path="/attendance" element={<AttendancePage />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/certificates" element={<MyCertificatesPage />} />
           </Route>
 
           {/* Admin — wrapped in sidebar layout */}
