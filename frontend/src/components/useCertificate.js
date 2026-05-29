@@ -1,6 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
-
+import api from "../services/api";
 /**
  * useCertificate
  *
@@ -35,7 +34,7 @@ export const useCertificate = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await axios.post("/api/certificates/generate", {
+      const { data } = await api.post("/certificates/generate", {
         courseId,
         studentName,
         courseName,

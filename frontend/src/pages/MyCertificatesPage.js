@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 import CertificateModal from "../components/CertificateModal";
 
 /**
@@ -18,7 +18,7 @@ const MyCertificatesPage = () => {
   useEffect(() => {
     const fetchCerts = async () => {
       try {
-        const { data } = await axios.get("/api/certificates/my");
+        const { data } = await api.get("/certificates/my");
         setCertificates(data.certificates);
       } catch {
         setError("Failed to load certificates.");
