@@ -76,11 +76,29 @@ if (process.env.NODE_ENV === "development") {
 }
 
 // ─── Global rate limiter ──────────────────────────────────
+// Key by authenticated user (decoded from the JWT) when present, falling
+// back to IP. This stops one busy user from exhausting the shared budget
+// for everyone else behind the same IP (school/office Wi-Fi, mobile NAT),
+// and raises the ceiling to account for the app's background polling
+// (chat messages, participants, attendance heartbeats, etc.) while a
+// lesson page is open.
+const keyByUserOrIp = (req) => {
+  try {
+    const token = (req.headers.authorization || "").replace("Bearer ", "");
+    if (token) {
+      const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64").toString());
+      if (payload?.id || payload?.sub) return `user_${payload.id || payload.sub}`;
+    }
+  } catch (_) {}
+  return req.ip;
+};
+
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000, // 15 min
-  max: parseInt(process.env.RATE_LIMIT_MAX) || 300,
+  max: parseInt(process.env.RATE_LIMIT_MAX) || 1200,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: keyByUserOrIp,
   skip: (req) => req.method === "OPTIONS",
   message: {
     success: false,
@@ -170,9 +188,12 @@ const server = app.listen(PORT, () => {
 
 // ─── Graceful shutdown ────────────────────────────────────
 process.on("unhandledRejection", (err) => {
+  // Log loudly but do NOT exit — a single stray rejection (e.g. a 429 from
+  // an external API like Resend/VdoCipher) should not take down the whole
+  // server for every other user. Routes are already wrapped in asyncHandler,
+  // so this is a safety net for logging, not a reason to crash.
   console.error(`❌ Unhandled Rejection: ${err.message}`);
   console.error(err.stack);
-  server.close(() => process.exit(1));
 });
 
 process.on("SIGTERM", () => {
