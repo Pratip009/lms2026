@@ -4,7 +4,7 @@ const {
   generateCertificate,
   getMyCertificates,
   verifyCertificate,
-} = require("../controllers/certificateController");
+} = require("../controllers/Certificatecontroller");
 
 // Replace `protect` with whatever your auth middleware is named in this project
 const { protect } = require("../middlewares/auth");
