@@ -63,6 +63,8 @@ app.use(helmet());
 //   })
 // );
 const allowedOrigins = [
+  "https://bhilearning.com",
+  "https://www.bhilearning.com",
   "https://lms2026-chi.vercel.app",
   "http://localhost:3000",
 ];

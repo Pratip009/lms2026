@@ -564,7 +564,7 @@ export default function Navbar() {
         {/* Logo */}
         <Link to="/" className="nav-logo">
           <div className="nav-logo-mark"><LogoMark /></div>
-          <span className="nav-logo-text">BHI<span>-</span>Learning</span>
+          <span className="nav-logo-text">Bright Learning Academy</span>
         </Link>
 
         {/* Center links — desktop */}
