@@ -318,7 +318,7 @@ export default function CinematicLoader({ onDone }) {
 
           <div className="bhi-title-wrap">
             <span className="bhi-eyebrow">Welcome to</span>
-            <span className="bhi-title">BHI Learning</span>
+            <span className="bhi-title">Bright Learning Academy</span>
           </div>
           <span className="bhi-title-accent">Learn · Watch · Excel</span>
 
