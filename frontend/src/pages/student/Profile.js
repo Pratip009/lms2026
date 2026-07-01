@@ -5,7 +5,9 @@ import { setUser } from "../../redux/slices/authSlice";
 /* ─────────────────────────────────────────────────────────────
    API BASE — matches your Vercel ↔ Render setup
    ───────────────────────────────────────────────────────────── */
-const API_BASE = import.meta.env.VITE_API_URL;
+const API_BASE = import.meta.env.REACT_APP_API_URL || "http://localhost:5000/api";
+console.log(import.meta.env.REACT_APP_API_URL);
+console.log("API URL:", process.env.REACT_APP_API_URL);
 
 // ── Debug: printed once on page load — check browser console ──
 // Should show your Render URL + a non-empty token
