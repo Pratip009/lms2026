@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../redux/slices/authSlice';
+import logo from '../../assets/logo.png';
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
@@ -61,9 +62,9 @@ const styles = `
   .nav-logo:hover { text-decoration: none; }
   .nav-logo-mark {
     width: 32px; height: 32px; border-radius: 9px;
-    background: linear-gradient(135deg, var(--b600) 0%, var(--b800) 100%);
+    
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 2px 8px rgba(37,99,235,0.28), inset 0 1px 0 rgba(255,255,255,0.18);
+    
     flex-shrink: 0;
   }
   .nav-logo-mark svg { width: 16px; height: 16px; }
@@ -443,10 +444,13 @@ const IconArrow = () => (
   </svg>
 );
 const LogoMark = () => (
-  <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16">
-    <path d="M3 12V5.5L8 3l5 2.5V12L8 13.5 3 12z" fill="rgba(255,255,255,0.9)"/>
-    <path d="M8 3v10.5M3 12l5-1.5M13 12l-5-1.5" stroke="rgba(37,99,235,0.5)" strokeWidth="0.8"/>
-  </svg>
+  <img
+    src={logo}
+    alt="Logo"
+    width={32}
+    height={32}
+    style={{ objectFit: "contain" }}
+  />
 );
 
 /* ── Avatar component — shows image if available, else initials ── */
@@ -560,7 +564,7 @@ export default function Navbar() {
         {/* Logo */}
         <Link to="/" className="nav-logo">
           <div className="nav-logo-mark"><LogoMark /></div>
-          <span className="nav-logo-text">E<span>·</span>Learning</span>
+          <span className="nav-logo-text">BHI<span>-</span>Learning</span>
         </Link>
 
         {/* Center links — desktop */}
