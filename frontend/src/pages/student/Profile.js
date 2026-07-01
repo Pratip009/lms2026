@@ -5,12 +5,11 @@ import { setUser } from "../../redux/slices/authSlice";
 /* ─────────────────────────────────────────────────────────────
    API BASE — matches your Vercel ↔ Render setup
    ───────────────────────────────────────────────────────────── */
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_BASE = import.meta.env.VITE_API_URL;
 
 // ── Debug: printed once on page load — check browser console ──
 // Should show your Render URL + a non-empty token
-console.log("[Profile] API_BASE =", API_BASE);
-console.log("[Profile] token in localStorage =", localStorage.getItem("token") ? "✓ present" : "✗ MISSING — this causes 401");
+
 
 /* ─────────────────────────────────────────────────────────────
    TOKEN HELPER
