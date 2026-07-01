@@ -62,10 +62,26 @@ app.use(helmet());
 //     allowedHeaders: ["Content-Type", "Authorization"],
 //   })
 // );
+const allowedOrigins = [
+  "https://lms2026-chi.vercel.app",
+  "http://localhost:3000",
+];
 app.use(
   cors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Allow server-to-server requests or tools without an Origin header
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.log("Blocked Origin:", origin);
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json({ limit: "10mb" }));
