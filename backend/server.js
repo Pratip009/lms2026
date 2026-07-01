@@ -54,7 +54,7 @@ app.use(helmet());
 app.use(
   cors({
     origin: [
-      process.env.CLIENT_URL || "https://lms2026-chi.vercel.app/",
+      process.env.CLIENT_URL || "https://lms2026-chi.vercel.app",
       "http://localhost:3000",
     ],
     credentials: true,
