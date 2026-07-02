@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
@@ -93,9 +93,15 @@ const css = `
 
   /* ── Title ── */
   .bhi-title-wrap {
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    margin-bottom: 10px;
-  }
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  width: 100%;
+  padding: 0 20px;
+  text-align: center;
+}
   .bhi-eyebrow {
     font-size: 10px; font-weight: 700; letter-spacing: .22em;
     text-transform: uppercase; color: #60a5fa;
@@ -103,15 +109,22 @@ const css = `
     font-family: 'Syne', sans-serif;
   }
   .bhi-title {
-    font-family: 'Syne', sans-serif;
-    font-size: clamp(36px, 8vw, 58px);
-    font-weight: 800; letter-spacing: -.05em;
-    line-height: 1;
-    background: linear-gradient(135deg, #f0f6ff 30%, #93c5fd 70%, #60a5fa);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: bhi-fade-up .55s ease both .15s;
-  }
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(24px, 6vw, 58px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  max-width: 900px;
+  width: 100%;
+  text-wrap: balance; /* supported in modern browsers */
+
+  background: linear-gradient(135deg, #f0f6ff 30%, #93c5fd 70%, #60a5fa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+
+  animation: bhi-fade-up .55s ease both .15s;
+}
   .bhi-title-accent {
     font-family: 'Syne', sans-serif;
     font-size: clamp(11px, 2vw, 14px);
@@ -219,6 +232,51 @@ const css = `
     40%  { opacity: 1; transform: scale(1.02); }
     100% { opacity: 0; transform: scale(1.06); pointer-events: none; }
   }
+    /* Tablets */
+@media (max-width: 768px) {
+  .bhi-title {
+    font-size: 34px;
+    line-height: 1.15;
+  }
+
+  .bhi-title-accent {
+    font-size: 12px;
+    margin-bottom: 30px;
+  }
+
+  .bhi-eyebrow {
+    font-size: 10px;
+  }
+}
+
+/* Phones */
+@media (max-width: 480px) {
+  .bhi-title-wrap {
+    padding: 0 24px;
+  }
+
+  .bhi-title {
+    font-size: 28px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  .bhi-title-accent {
+    font-size: 11px;
+    margin-bottom: 24px;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 360px) {
+  .bhi-title {
+    font-size: 24px;
+  }
+
+  .bhi-title-accent {
+    font-size: 10px;
+  }
+}
 `;
 
 const PARTICLES = Array.from({ length: 18 }, (_, i) => ({
@@ -231,40 +289,56 @@ const PARTICLES = Array.from({ length: 18 }, (_, i) => ({
 }));
 
 const STEPS = [
-  'Initialising platform…',
-  'Loading your courses…',
-  'Preparing content…',
-  'Almost ready…',
+  "Initialising platform…",
+  "Loading your courses…",
+  "Preparing content…",
+  "Almost ready…",
 ];
 
 const LogoIcon = () => (
   <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-    <path d="M6 28V12L18 7L30 12V28L18 33L6 28Z" fill="rgba(255,255,255,0.92)"/>
-    <path d="M18 7V33M6 28L18 24.5M30 28L18 24.5" stroke="rgba(37,99,235,0.55)" strokeWidth="1.5"/>
-    <circle cx="18" cy="18" r="4" fill="rgba(37,99,235,0.35)" stroke="rgba(96,165,250,0.7)" strokeWidth="1"/>
+    <path
+      d="M6 28V12L18 7L30 12V28L18 33L6 28Z"
+      fill="rgba(255,255,255,0.92)"
+    />
+    <path
+      d="M18 7V33M6 28L18 24.5M30 28L18 24.5"
+      stroke="rgba(37,99,235,0.55)"
+      strokeWidth="1.5"
+    />
+    <circle
+      cx="18"
+      cy="18"
+      r="4"
+      fill="rgba(37,99,235,0.35)"
+      stroke="rgba(96,165,250,0.7)"
+      strokeWidth="1"
+    />
   </svg>
 );
 
 export default function CinematicLoader({ onDone }) {
-  const [progress,  setProgress]  = useState(0);
+  const [progress, setProgress] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
-  const [exiting,   setExiting]   = useState(false);
+  const [exiting, setExiting] = useState(false);
   const [activeDot, setActiveDot] = useState(0);
 
   useEffect(() => {
     // Lock scroll
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
 
     const TOTAL = 2600; // ms total duration
     const start = Date.now();
 
     const tick = () => {
       const elapsed = Date.now() - start;
-      const pct     = Math.min((elapsed / TOTAL) * 100, 100);
+      const pct = Math.min((elapsed / TOTAL) * 100, 100);
       setProgress(pct);
       setActiveDot(Math.min(Math.floor(pct / 25), 3));
-      setStepIndex(Math.min(Math.floor((pct / 100) * STEPS.length), STEPS.length - 1));
+      setStepIndex(
+        Math.min(Math.floor((pct / 100) * STEPS.length), STEPS.length - 1),
+      );
 
       if (pct < 100) {
         requestAnimationFrame(tick);
@@ -272,8 +346,8 @@ export default function CinematicLoader({ onDone }) {
         // Start exit
         setExiting(true);
         setTimeout(() => {
-          document.documentElement.style.overflow = '';
-          document.body.style.overflow = '';
+          document.documentElement.style.overflow = "";
+          document.body.style.overflow = "";
           onDone?.();
         }, 600);
       }
@@ -282,15 +356,15 @@ export default function CinematicLoader({ onDone }) {
     const raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);
-      document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
     };
   }, [onDone]);
 
   return (
     <>
       <style>{css}</style>
-      <div className={`bhi-loader-root${exiting ? ' exiting' : ''}`}>
+      <div className={`bhi-loader-root${exiting ? " exiting" : ""}`}>
         {/* Glows */}
         <div className="bhi-glow-1" />
         <div className="bhi-glow-2" />
@@ -298,14 +372,20 @@ export default function CinematicLoader({ onDone }) {
 
         {/* Particles */}
         <div className="bhi-particles">
-          {PARTICLES.map(p => (
-            <div key={p.id} className="bhi-particle" style={{
-              left: p.left, bottom: '-10px',
-              width: p.size, height: p.size,
-              animationDuration: p.duration,
-              animationDelay: p.delay,
-              '--dx': p.dx,
-            }} />
+          {PARTICLES.map((p) => (
+            <div
+              key={p.id}
+              className="bhi-particle"
+              style={{
+                left: p.left,
+                bottom: "-10px",
+                width: p.size,
+                height: p.size,
+                animationDuration: p.duration,
+                animationDelay: p.delay,
+                "--dx": p.dx,
+              }}
+            />
           ))}
         </div>
 
@@ -318,20 +398,30 @@ export default function CinematicLoader({ onDone }) {
 
           <div className="bhi-title-wrap">
             <span className="bhi-eyebrow">Welcome to</span>
-            <span className="bhi-title">Bright Learning Academy</span>
+            <span className="bhi-title">
+              Bright Learning
+              <br />
+              Academy
+            </span>
           </div>
           <span className="bhi-title-accent">Learn · Watch · Excel</span>
 
           <div className="bhi-progress-wrap">
             <div className="bhi-progress-track">
-              <div className="bhi-progress-fill" style={{ width: `${progress}%` }} />
+              <div
+                className="bhi-progress-fill"
+                style={{ width: `${progress}%` }}
+              />
             </div>
             <div className="bhi-status">{STEPS[stepIndex]}</div>
           </div>
 
           <div className="bhi-dots">
-            {[0,1,2,3].map(i => (
-              <div key={i} className={`bhi-dot${activeDot === i ? ' active' : ''}`} />
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className={`bhi-dot${activeDot === i ? " active" : ""}`}
+              />
             ))}
           </div>
         </div>
