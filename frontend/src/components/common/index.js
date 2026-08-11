@@ -70,7 +70,7 @@ export function CourseCard({ course, onClick }) {
       )}
       <div style={{ fontWeight: 600, marginBottom: 4 }} className="truncate">{course.title}</div>
       <div className="text-sm text-muted" style={{ marginBottom: 8 }}>
-        {course.instructor?.name} · <span className="badge badge-gray">{course.level}</span>
+        {course.instructorName || course.instructor?.name} · <span className="badge badge-gray">{course.level}</span>
       </div>
       <div className="flex items-center justify-between">
         <span style={{ fontWeight: 700, color: '#2563eb' }}>${price}</span>

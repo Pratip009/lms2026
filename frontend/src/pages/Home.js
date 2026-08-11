@@ -712,8 +712,9 @@ const getC = cat =>
 
 function CourseCard({ course, onClick, index }) {
   const c = getC(course.category);
-  const initials = course.instructor?.name
-    ? course.instructor.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+  const instructorDisplayName = course.instructorName || course.instructor?.name;
+  const initials = instructorDisplayName
+    ? instructorDisplayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
     : '??';
 
   return (
@@ -735,10 +736,10 @@ function CourseCard({ course, onClick, index }) {
         <div className="ccard-title">{course.title}</div>
         {course.shortDescription && <div className="ccard-desc">{course.shortDescription}</div>}
 
-        {course.instructor?.name && (
+        {instructorDisplayName && (
           <div className="ccard-instructor">
             <div className="ccard-av" style={{ background: c.av }}>{initials}</div>
-            <span className="ccard-instructor-name">{course.instructor.name}</span>
+            <span className="ccard-instructor-name">{instructorDisplayName}</span>
           </div>
         )}
 

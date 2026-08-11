@@ -49,6 +49,17 @@ const courseSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    // Display name of the actual course instructor/teacher.
+    // `instructor` above stays as the admin/creator reference (used for
+    // permissions/auditing), but the storefront should show this name
+    // instead, since courses are often created by an admin on behalf of
+    // a separate instructor who has no login of their own.
+    instructorName: {
+      type: String,
+      trim: true,
+      maxlength: [80, "Instructor name cannot exceed 80 characters"],
+      default: "",
+    },
     category: {
       type: String,
       required: [true, "Category is required"],

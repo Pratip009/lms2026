@@ -772,13 +772,13 @@ export default function CourseDetail() {
                 {[1,2,3,4,5].map(s => <span key={s} className="cd-star">★</span>)}
                 <span className="cd-rating-num">4.8</span>
               </div>
-              {course.instructor?.name && (
+              {(course.instructorName || course.instructor?.name) && (
                 <div className="cd-hero-meta-item">
                   <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
                   </svg>
-                  <strong>{course.instructor.name}</strong>
+                  <strong>{course.instructorName || course.instructor.name}</strong>
                 </div>
               )}
               {course.totalLessons > 0 && (

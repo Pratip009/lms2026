@@ -15,6 +15,7 @@ const INIT = {
   requirements: '',
   whatYouWillLearn: '',
   tags: '',
+  instructorName: '',
 };
 
 export default function AdminCourseForm() {
@@ -46,6 +47,7 @@ export default function AdminCourseForm() {
           requirements: (c.requirements || []).join('\n'),
           whatYouWillLearn: (c.whatYouWillLearn || []).join('\n'),
           tags: (c.tags || []).join(', '),
+          instructorName: c.instructorName || '',
         });
       })
       .finally(() => setLoading(false));
@@ -152,6 +154,15 @@ export default function AdminCourseForm() {
               onChange={(e) => set('description', e.target.value)}
               rows={5}
               required
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Instructor Name</label>
+            <input
+              value={form.instructorName}
+              onChange={(e) => set('instructorName', e.target.value)}
+              placeholder="e.g. Jane Smith (defaults to your admin name if left blank)"
             />
           </div>
 

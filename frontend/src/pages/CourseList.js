@@ -521,9 +521,13 @@ const getC = cat =>
 
 function CourseCard({ course, onClick, index }) {
   const c = getC(course.category);
-  const initials = course.instructor?.name
-    ? course.instructor.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+  const instructorDisplayName = course.instructorName || course.instructor?.name;
+  const initials = instructorDisplayName
+    ? instructorDisplayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
     : '??';
+  // Only show the creator's avatar photo when we're actually displaying
+  // their name — once instructorName overrides it, fall back to initials.
+  const showCreatorAvatar = !course.instructorName && course.instructor?.avatar;
 
   return (
     <div
@@ -577,12 +581,12 @@ function CourseCard({ course, onClick, index }) {
         )}
 
         {/* Instructor */}
-        {course.instructor?.name && (
+        {instructorDisplayName && (
           <div className="cl-card-instructor">
-            {course.instructor?.avatar ? (
+            {showCreatorAvatar ? (
               <img
                 src={course.instructor.avatar}
-                alt={course.instructor.name}
+                alt={instructorDisplayName}
                 className="cl-card-avatar-img"
               />
             ) : (
@@ -593,7 +597,7 @@ function CourseCard({ course, onClick, index }) {
                 {initials}
               </div>
             )}
-            <span className="cl-card-avatar-name">{course.instructor.name}</span>
+            <span className="cl-card-avatar-name">{instructorDisplayName}</span>
           </div>
         )}
 

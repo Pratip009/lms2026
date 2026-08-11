@@ -383,11 +383,11 @@ export default function MyCourses() {
                   <div className="mc-card-body">
                     <h3 className="mc-card-title">{e.course?.title}</h3>
 
-                    <div className="mc-card-meta">
-                      {e.course?.instructor?.name && (
-                        <><span className="mc-meta-icon">👤</span><span>{e.course.instructor.name}</span></>
+                   <div className="mc-card-meta">
+                      {(e.course?.instructorName || e.course?.instructor?.name) && (
+                        <><span className="mc-meta-icon">👤</span><span>{e.course.instructorName || e.course.instructor.name}</span></>
                       )}
-                      {e.course?.instructor?.name && lessons > 0 && <span className="mc-meta-sep">·</span>}
+                      {(e.course?.instructorName || e.course?.instructor?.name) && lessons > 0 && <span className="mc-meta-sep">·</span>}
                       {lessons > 0 && <span>{lessons} lesson{lessons !== 1 ? 's' : ''}</span>}
                     </div>
 

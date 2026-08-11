@@ -162,6 +162,7 @@ const createCourse = asyncHandler(async (req, res) => {
     language,
     requirements,
     whatYouWillLearn,
+    instructorName,
   } = req.body;
 
   const courseData = {
@@ -184,7 +185,11 @@ const createCourse = asyncHandler(async (req, res) => {
         ? whatYouWillLearn
         : JSON.parse(whatYouWillLearn)
       : [],
+    // `instructor` is kept as the admin/creator reference for permissions.
+    // `instructorName` is the human-entered name shown on the storefront —
+    // falls back to the creating admin's name if left blank.
     instructor: req.user._id,
+    instructorName: instructorName?.trim() || req.user.name,
   };
 
   if (req.file) {
@@ -221,6 +226,7 @@ const updateCourse = asyncHandler(async (req, res) => {
     "language",
     "isPublished",
     "isFeatured",
+    "instructorName",
   ];
 
   updatableFields.forEach((field) => {
