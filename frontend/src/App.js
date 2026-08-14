@@ -39,6 +39,22 @@ import AdminOrders from "./pages/admin/Orders";
 import AdminAttendance from "./pages/admin/Attendance";
 import FloatingUI from "./components/common/Floatingui";
 
+// BHI Attendance & Student Tracking module — admin pages
+import AdminBhiDashboard from "./pages/admin/bhi/Dashboard";
+import AdminBhiStudents from "./pages/admin/bhi/Students";
+import AdminBhiStudentProfile from "./pages/admin/bhi/StudentProfile";
+import AdminBhiClasses from "./pages/admin/bhi/Classes";
+import AdminBhiPrograms from "./pages/admin/bhi/Programs";
+import AdminBhiCalendar from "./pages/admin/bhi/Calendar";
+import AdminBhiReports from "./pages/admin/bhi/Reports";
+
+// BHI Attendance & Student Tracking module — teacher pages
+import TeacherLayout from "./components/layout/TeacherLayout";
+import TeacherBhiMyClasses from "./pages/teacher/bhi/MyClasses";
+import TeacherBhiMarkAttendance from "./pages/teacher/bhi/MarkAttendance";
+import TeacherBhiLessonHistory from "./pages/teacher/bhi/LessonHistory";
+import TeacherBhiAlerts from "./pages/teacher/bhi/Alerts";
+
 // Separate component so useAttendance runs AFTER fetchMe populates user
 function AttendanceTracker() {
   useAttendance();
@@ -132,6 +148,25 @@ function App() {
               />
               <Route path="/admin/orders" element={<AdminOrders />} />
               <Route path="/admin/attendance" element={<AdminAttendance />} />
+
+              {/* BHI Attendance & Student Tracking module */}
+              <Route path="/admin/bhi" element={<AdminBhiDashboard />} />
+              <Route path="/admin/bhi/students" element={<AdminBhiStudents />} />
+              <Route path="/admin/bhi/students/:id" element={<AdminBhiStudentProfile />} />
+              <Route path="/admin/bhi/classes" element={<AdminBhiClasses />} />
+              <Route path="/admin/bhi/programs" element={<AdminBhiPrograms />} />
+              <Route path="/admin/bhi/calendar" element={<AdminBhiCalendar />} />
+              <Route path="/admin/bhi/reports" element={<AdminBhiReports />} />
+            </Route>
+          </Route>
+
+          {/* BHI teacher section — admin can access too (ProtectedRoute bypass) */}
+          <Route element={<ProtectedRoute role="teacher" />}>
+            <Route element={<TeacherLayout />}>
+              <Route path="/teacher/bhi" element={<TeacherBhiMyClasses />} />
+              <Route path="/teacher/bhi/classes/:classId/attendance" element={<TeacherBhiMarkAttendance />} />
+              <Route path="/teacher/bhi/classes/:classId/lessons" element={<TeacherBhiLessonHistory />} />
+              <Route path="/teacher/bhi/alerts" element={<TeacherBhiAlerts />} />
             </Route>
           </Route>
 

@@ -26,7 +26,9 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["student", "admin"],
+      // "teacher" added for the BHI Attendance & Student Tracking module.
+      // Existing "student"/"admin" behaviour (course purchases, etc.) is unchanged.
+      enum: ["student", "admin", "teacher"],
       default: "student",
     },
     avatar: {

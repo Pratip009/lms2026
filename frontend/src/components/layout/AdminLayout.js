@@ -7,6 +7,12 @@ const links = [
   { to: '/admin/students', label: '👥 Students' },
   { to: '/admin/orders', label: '💳 Orders' },
   { to: '/admin/attendance', label: '📅 Attendance' },
+  { to: '/admin/bhi', label: '🏫 BHI Dashboard', end: true },
+  { to: '/admin/bhi/students', label: '🗂️ BHI Students' },
+  { to: '/admin/bhi/classes', label: '🧑‍🏫 BHI Classes' },
+  { to: '/admin/bhi/programs', label: '🎓 BHI Programs' },
+  { to: '/admin/bhi/calendar', label: '🗓️ BHI Calendar' },
+  { to: '/admin/bhi/reports', label: '📁 BHI Reports' },
 ];
 
 export default function AdminLayout() {

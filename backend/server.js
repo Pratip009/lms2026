@@ -31,6 +31,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const webhookRoutes = require("./routes/webhookRoutes");
 const lessonChatRoutes = require("./routes/Lessonchatroutes.js");
 const certificateRoutes = require("./routes/certificateRoutes");
+const bhiRoutes = require("./routes/bhi/bhiRoutes"); // BHI Attendance & Student Tracking module
 const app = express();
 app.set("trust proxy", 1);
 
@@ -190,6 +191,7 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/certificates", certificateRoutes);
+app.use("/api/bhi", bhiRoutes); // BHI Attendance & Student Tracking module
 
 // Chat gets its own limiter
 app.use(
