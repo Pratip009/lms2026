@@ -7,6 +7,7 @@ const BhiDailyInstructionalRecord = require("../../models/bhi/BhiDailyInstructio
 const BhiAttendanceAudit = require("../../models/bhi/BhiAttendanceAudit");
 const BhiColorConfig = require("../../models/bhi/BhiColorConfig");
 const { isWeekend, loadNonInstructionalDates } = require("../../utils/bhiCalendar");
+const { getOwnClassIdsOrNull } = require("../../middlewares/bhi/bhiAuth");
 const {
   getClassAttendanceSummary,
   getProgramProgress,
@@ -368,7 +369,9 @@ const getStudentProfile = asyncHandler(async (req, res) => {
 // GET /api/bhi/attendance/alerts
 // ─────────────────────────────────────────────────────────
 const getAlerts = asyncHandler(async (req, res) => {
-  const overview = await getOverviewListsInternal();
+  // §2: a teacher only sees alerts for students in classes they teach
+  const ownClassIds = req.user.role === "teacher" ? await getOwnClassIdsOrNull(req.user) : null;
+  const overview = await getOverviewListsInternal(ownClassIds);
   res.json({
     success: true,
     concernCount: overview.Orange.length,
@@ -379,17 +382,21 @@ const getAlerts = asyncHandler(async (req, res) => {
 });
 
 // internal helper reused by getOverviewLists/getAlerts
-async function getOverviewListsInternal() {
+// ownClassIds: null = no restriction (admin); array = restrict to these classes (teacher, §2)
+async function getOverviewListsInternal(ownClassIds = null) {
   const students = await BhiStudent.find({ enrollmentStatus: "Active", isArchived: false }).populate({
     path: "enrollments",
     match: { role: "primary", status: "Active" },
     populate: { path: "class", populate: ["program", "teacher"] },
   });
 
+  const ownClassIdSet = ownClassIds ? new Set(ownClassIds.map(String)) : null;
+
   const lists = { Green: [], Orange: [], Red: [] };
   for (const student of students) {
     const primaryEnrollment = student.enrollments?.[0];
     if (!primaryEnrollment) continue;
+    if (ownClassIdSet && !ownClassIdSet.has(String(primaryEnrollment.class._id))) continue;
     const summary = await getClassAttendanceSummary(student._id, primaryEnrollment.class._id);
     const color = student.colorOverride || summary.color;
     lists[color].push({
@@ -449,6 +456,7 @@ const getLessonHistory = asyncHandler(async (req, res) => {
 });
 
 // GET /api/bhi/attendance/lesson-history/:dailyRecordId — full day detail
+// GET /api/bhi/attendance/lesson-history/:dailyRecordId — full day detail
 const getLessonDayDetail = asyncHandler(async (req, res) => {
   const dailyRecord = await BhiDailyInstructionalRecord.findById(req.params.dailyRecordId).populate(
     "teacher",
@@ -458,6 +466,16 @@ const getLessonDayDetail = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Daily instructional record not found.");
   }
+
+  // §2: a teacher may only view lesson detail for a class they teach
+  if (req.user.role === "teacher") {
+    const bhiClass = await BhiClass.findById(dailyRecord.class).select("teacher").lean();
+    if (!bhiClass || String(bhiClass.teacher) !== String(req.user._id)) {
+      res.status(403);
+      throw new Error("You are not assigned to this class.");
+    }
+  }
+
   const marks = await BhiAttendanceRecord.find({ dailyRecord: dailyRecord._id }).populate(
     "student",
     "firstName lastName studentId"

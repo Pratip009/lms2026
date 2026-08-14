@@ -58,7 +58,7 @@ const bhiStudentSchema = new mongoose.Schema(
 );
 
 bhiStudentSchema.index({ lastName: 1, firstName: 1 });
-bhiStudentSchema.index({ studentId: 1 }, { unique: true });
+// (studentId already has a unique index via `unique: true` on the field above)
 bhiStudentSchema.index({ "caseworker.name": 1 });
 bhiStudentSchema.index({ organization: 1 });
 bhiStudentSchema.index({ enrollmentStatus: 1 });

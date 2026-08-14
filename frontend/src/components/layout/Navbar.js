@@ -281,6 +281,7 @@ const styles = `
   }
   .nav-role-badge-admin { background: rgba(251,191,36,.15); color: #fcd34d; border-color: rgba(252,211,77,.25); }
   .nav-role-badge-student { background: rgba(66,133,244,.18); color: var(--b200); border-color: rgba(66,133,244,.3); }
+  .nav-role-badge-teacher { background: rgba(52,211,153,.18); color: #6ee7b7; border-color: rgba(52,211,153,.3); }
 
   .nav-dropdown-label {
     font-size: 10.5px; font-weight: 700; letter-spacing: .09em;
@@ -577,6 +578,7 @@ export default function Navbar() {
 
   const isAdmin = user?.role === 'admin';
   const isStudent = user?.role === 'student';
+  const isTeacher = user?.role === 'teacher';
 
   // Avatar URL from user object (set by Profile page after upload)
   const avatarUrl = user?.avatar?.url || null;
@@ -596,6 +598,10 @@ export default function Navbar() {
       { label: 'Dashboard',  path: '/dashboard' },
       { label: 'My Courses', path: '/my-courses' },
     ] : []),
+    ...(isTeacher ? [
+      { label: 'My Classes', path: '/teacher/bhi' },
+      { label: 'Alerts',     path: '/teacher/bhi/alerts' },
+    ] : []),
   ];
 
   const dropdownItems = [
@@ -603,6 +609,10 @@ export default function Navbar() {
       { label: 'Dashboard',  path: '/dashboard',  Icon: IconDashboard },
       { label: 'My Courses', path: '/my-courses', Icon: IconCourses },
       { label: 'Profile',    path: '/profile',    Icon: IconProfile },
+    ] : []),
+    ...(isTeacher ? [
+      { label: 'My Classes', path: '/teacher/bhi',        Icon: IconDashboard },
+      { label: 'Alerts',     path: '/teacher/bhi/alerts', Icon: IconCourses },
     ] : []),
     ...(isAdmin ? [
       { label: 'Admin Panel', path: '/admin', Icon: IconAdmin },
@@ -674,7 +684,7 @@ export default function Navbar() {
                           <div className="nav-dropdown-email">{user.email}</div>
                         </div>
                       </div>
-                      <div className={`nav-role-badge ${isAdmin ? 'nav-role-badge-admin' : isStudent ? 'nav-role-badge-student' : ''}`}>
+                      <div className={`nav-role-badge ${isAdmin ? 'nav-role-badge-admin' : isStudent ? 'nav-role-badge-student' : isTeacher ? 'nav-role-badge-teacher' : ''}`}>
                         {isAdmin ? '⚡ ' : ''}{user.role}
                       </div>
                     </div>

@@ -2,7 +2,10 @@ const express = require("express");
 const router = express.Router();
 
 const { protect, authorize } = require("../../middlewares/auth");
-const { requireOwnClassOrAdmin } = require("../../middlewares/bhi/bhiAuth");
+const {
+  requireOwnClassOrAdmin,
+  requireOwnStudentOrAdmin,
+} = require("../../middlewares/bhi/bhiAuth");
 
 const programCtrl = require("../../controllers/bhi/bhiProgramController");
 const classCtrl = require("../../controllers/bhi/bhiClassController");
@@ -41,7 +44,12 @@ router.delete("/classes/:id", authorize("admin"), classCtrl.deactivateClass);
 // ─── §4, §13-14, §21, §24: Students ────────────────────────
 router.get("/students", authorize("admin", "teacher"), studentCtrl.getStudents);
 router.get("/students/search", authorize("admin", "teacher"), studentCtrl.searchStudents);
-router.get("/students/:id", authorize("admin", "teacher"), studentCtrl.getStudentBasic);
+router.get(
+  "/students/:id",
+  authorize("admin", "teacher"),
+  requireOwnStudentOrAdmin,
+  studentCtrl.getStudentBasic
+);
 router.post("/students", authorize("admin"), studentCtrl.createStudent);
 router.patch("/students/:id", authorize("admin"), studentCtrl.updateStudent);
 router.patch("/students/:id/status", authorize("admin"), studentCtrl.changeStudentStatus);
@@ -56,6 +64,7 @@ router.delete("/calendar/:id", authorize("admin"), calendarCtrl.removeCalendarEv
 router.get(
   "/attendance/roster",
   authorize("admin", "teacher"),
+  requireOwnClassOrAdmin,
   attendanceCtrl.getRosterForDate
 );
 router.post(
@@ -67,6 +76,7 @@ router.post(
 router.get(
   "/attendance/lesson-history",
   authorize("admin", "teacher"),
+  requireOwnClassOrAdmin,
   attendanceCtrl.getLessonHistory
 );
 router.get(
@@ -104,6 +114,7 @@ router.patch(
 router.get(
   "/attendance/students/:studentId/profile",
   authorize("admin", "teacher"),
+  requireOwnStudentOrAdmin,
   attendanceCtrl.getStudentProfile
 );
 

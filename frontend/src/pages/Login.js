@@ -380,7 +380,10 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
 
   useEffect(() => {
-    if (user) navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+    if (!user) return;
+    if (user.role === 'admin') navigate('/admin');
+    else if (user.role === 'teacher') navigate('/teacher/bhi');
+    else navigate('/dashboard');
   }, [user, navigate]);
 
   useEffect(() => { return () => dispatch(clearError()); }, [dispatch]);

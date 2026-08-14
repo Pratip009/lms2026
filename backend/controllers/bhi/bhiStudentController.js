@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const BhiStudent = require("../../models/bhi/BhiStudent");
 const BhiEnrollment = require("../../models/bhi/BhiEnrollment");
 const BhiClass = require("../../models/bhi/BhiClass");
+const { getOwnClassIdsOrNull } = require("../../middlewares/bhi/bhiAuth");
 
 // POST /api/bhi/students — Add Student (admin only, §4)
 // Body: student info + optional { primaryProgram: { class, startDate, expectedEndDate } }
@@ -68,6 +69,15 @@ const getStudents = asyncHandler(async (req, res) => {
     ];
   }
 
+  // §2: teachers only see students assigned to their own classes
+  const ownClassIds = await getOwnClassIdsOrNull(req.user);
+  if (ownClassIds) {
+    const ownStudentIds = (
+      await BhiEnrollment.find({ class: { $in: ownClassIds } }).select("student").lean()
+    ).map((e) => e.student);
+    filter._id = { $in: ownStudentIds };
+  }
+
   const sortMap = {
     courseCode: "courseCode",
     caseworker: "caseworker.name",
@@ -102,14 +112,25 @@ const getStudents = asyncHandler(async (req, res) => {
 // GET /api/bhi/students/search?q= — by First/Last Name or Student ID (§21)
 const searchStudents = asyncHandler(async (req, res) => {
   const q = req.query.q || "";
-  const students = await BhiStudent.find({
+  const filter = {
     isArchived: false,
     $or: [
       { firstName: new RegExp(q, "i") },
       { lastName: new RegExp(q, "i") },
       { studentId: new RegExp(q, "i") },
     ],
-  })
+  };
+
+  // §2: teachers only see students assigned to their own classes
+  const ownClassIds = await getOwnClassIdsOrNull(req.user);
+  if (ownClassIds) {
+    const ownStudentIds = (
+      await BhiEnrollment.find({ class: { $in: ownClassIds } }).select("student").lean()
+    ).map((e) => e.student);
+    filter._id = { $in: ownStudentIds };
+  }
+
+  const students = await BhiStudent.find(filter)
     .limit(20)
     .populate({ path: "enrollments", populate: { path: "class", populate: "program" } });
 
@@ -117,6 +138,7 @@ const searchStudents = asyncHandler(async (req, res) => {
 });
 
 // GET /api/bhi/students/:id — full profile (detailed logic in bhiAttendanceController.getStudentProfile)
+// Access-scoped by the requireOwnStudentOrAdmin middleware on the route.
 const getStudentBasic = asyncHandler(async (req, res) => {
   const student = await BhiStudent.findById(req.params.id).populate({
     path: "enrollments",

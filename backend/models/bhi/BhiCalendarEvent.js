@@ -30,6 +30,6 @@ const bhiCalendarEventSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-bhiCalendarEventSchema.index({ date: 1 });
+
 
 module.exports = mongoose.model("BhiCalendarEvent", bhiCalendarEventSchema);
